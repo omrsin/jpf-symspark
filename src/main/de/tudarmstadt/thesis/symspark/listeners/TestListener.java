@@ -1,9 +1,7 @@
 package de.tudarmstadt.thesis.symspark.listeners;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
@@ -39,7 +37,7 @@ import gov.nasa.jpf.vm.VM;
 
 public class TestListener extends PropertyListenerAdapter implements PublisherExtension {
 	
-	List<List<String>> values = new ArrayList<List<String>>();
+	Set<Vector<String>> values = new LinkedHashSet<Vector<String>>();
 	
 	// this set will store all the method sequences.
 	// will be printed at last.
@@ -204,8 +202,8 @@ public class TestListener extends PropertyListenerAdapter implements PublisherEx
 	}
 	
 	
-	private List<String> getMethodValues(ChoiceGenerator [] cgs) {
-		List<String> methodValues = new ArrayList<String>();
+	private Vector<String> getMethodValues(ChoiceGenerator [] cgs) {
+		Vector<String> methodValues = new Vector<String>();
 		ChoiceGenerator cg = null;
 		for(int i = 0; i < cgs.length; i++) {
 			cg = cgs[i];
@@ -396,9 +394,9 @@ public class TestListener extends PropertyListenerAdapter implements PublisherEx
 	}
 	
 	private void printMethodValues(PrintWriter pw) {
-		for(List<String> value : values) {
-			pw.println(value);
-		}		
+//		for(List<String> value : values) {
+			pw.println(values);
+//		}		
 	}
 	
 	
