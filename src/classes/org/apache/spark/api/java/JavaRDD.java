@@ -5,6 +5,12 @@ import java.util.List;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 
+/**
+ * Model class that mocks the behavior of {@literal org.apache.spark.api.java.JavaRDD<T>} in Spark 2.0.2
+ * @author Omar Erminy (omar.erminy.ugueto@gmail.com)
+ * @see <a href=http://spark.apache.org/docs/2.0.2/api/java/org/apache/spark/api/java/JavaRDD.html>Spark's JavaRDD</a>
+ *
+ */
 public class JavaRDD<T> {
 	
 	private List<T> list_t;
@@ -13,8 +19,7 @@ public class JavaRDD<T> {
 		this.list_t = list_t;
 	}
 
-	public JavaRDD<T> filter(Function<T,Boolean> f) {
-		System.out.println("JavaRDD.filter");
+	public JavaRDD<T> filter(Function<T,Boolean> f) {		
 		try {
 			f.call(list_t.get(0));
 		} catch (Exception e) {
@@ -23,8 +28,7 @@ public class JavaRDD<T> {
 		return this;
 	}
 	
-	public <R> JavaRDD<R> map(Function<T, R> f) {
-		System.out.println("JavaRDD.map");
+	public <R> JavaRDD<R> map(Function<T, R> f) {		
 		try {
 			f.call(list_t.get(0));
 		} catch (Exception e) {
@@ -32,8 +36,7 @@ public class JavaRDD<T> {
 		} return (JavaRDD<R>) this;
 	}
 	
-	public T reduce(Function2<T, T, T> f) {
-		System.out.println("JavaRDD.reduce");
+	public T reduce(Function2<T, T, T> f) {		
 		try {
 			f.call(list_t.get(0), list_t.get(0));
 		} catch (Exception e) {
@@ -42,8 +45,7 @@ public class JavaRDD<T> {
 		return list_t.get(0);		
 	}
 	
-	public List<T> collect() {
-		System.out.println("JavaRDD.collect");
+	public List<T> collect() {		
 		return list_t;
 	}
 }

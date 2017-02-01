@@ -1,0 +1,7 @@
+de.tudarmstadt.thesis.symspark.jvm
+de.tudarmstadt.thesis.symspark.jvm.bytecode
+de.tudarmstadt.thesis.symspark.jvm.validators
+de.tudarmstadt.thesis.symspark.listeners
+org.apache.spark
+org.apache.spark.api.java
+org.apache.spark.api.java.function
