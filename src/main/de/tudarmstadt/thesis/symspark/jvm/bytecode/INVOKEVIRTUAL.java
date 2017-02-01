@@ -17,7 +17,7 @@ import gov.nasa.jpf.vm.ThreadInfo;
 public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 	
 	private static final Logger LOGGER = JPF.getLogger(INVOKEVIRTUAL.class.getName());
-	private static final String CLASS = "["+INVOKEVIRTUAL.class.getSimpleName()+"] ";
+	private static final String CLASS = INVOKEVIRTUAL.class.getSimpleName()+": ";
 
 	public INVOKEVIRTUAL(String clsName, String methodName, String methodSignature) {
 		super(clsName, methodName, methodSignature);

@@ -9,9 +9,7 @@ package de.tudarmstadt.thesis.symspark.jvm.validators;
  * @author Omar Erminy (omar.erminy.ugueto@gmail.com)
  *
  */
-public interface SparkValidator {
-	String[] SPARK_METHODS = {"filter", "map", "reduce"};
-	
+public interface SparkValidator {	
 	public boolean validateClass(String clsName);
 	public boolean validateMethod(String methodName);
 	public boolean isValid(String clsName, String methodName);
