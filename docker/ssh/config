@@ -1,0 +1,9 @@
+host jpf-symbc.github.com
+hostname github.com    
+user git
+identityfile ~/.ssh/id_rsa_jpf-symbc
+
+host jpf-symspark.github.com
+hostname github.com    
+user git
+identityfile ~/.ssh/id_rsa_jpf-symspark
