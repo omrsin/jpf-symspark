@@ -40,7 +40,14 @@ WORKDIR ${JPF_HOME}
 RUN hg clone http://babelfish.arc.nasa.gov/hg/jpf/jpf-core \ 
  && cd jpf-core \
  && hg update -r 31 \
- && ant 
+ && ant
+
+# create site.properties 
+RUN mkdir /root/.jpf \
+ && echo "jpf-core = ${JPF_HOME}/jpf-core" >> /root/.jpf/site.properties \
+ && echo "jpf-symbc = ${JPF_HOME}/jpf-symbc" >> /root/.jpf/site.properties \
+ && echo "jpf-symspark = ${JPF_HOME}/jpf-symspark" >> /root/.jpf/site.properties \
+ && echo "extensions=\${jpf-core}" >> /root/.jpf/site.properties
 
 # jpf-symbc 
 RUN git clone git@jpf-symbc.github.com:omrsin/jpf-symbc.git \
@@ -49,11 +56,5 @@ RUN git clone git@jpf-symbc.github.com:omrsin/jpf-symbc.git \
  
 # jpf-symspark
 RUN git clone git@jpf-symspark.github.com:omrsin/jpf-symspark.git \
- && cd jpf-symbc \
+ && cd jpf-symspark \
  && ant
- 
-RUN mkdir /root/.jpf \
- && echo "jpf-core = ${JPF_HOME}/jpf-core" >> /root/.jpf/site.properties \
- && echo "jpf-symbc = ${JPF_HOME}/jpf-symbc" >> /root/.jpf/site.properties \
- && echo "jpf-symspark = ${JPF_HOME}/jpf-symspark" >> /root/.jpf/site.properties \
- && echo "extensions=\${jpf-core}" >> /root/.jpf/site.properties
