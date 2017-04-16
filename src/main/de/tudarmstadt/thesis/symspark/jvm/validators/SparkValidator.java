@@ -1,5 +1,7 @@
 package de.tudarmstadt.thesis.symspark.jvm.validators;
 
+import gov.nasa.jpf.vm.Instruction;
+
 /**
  * This interface represents the contract enforced to identify valid
  * Spark classes and methods to be analyzed. The main idea of such an
@@ -10,7 +12,6 @@ package de.tudarmstadt.thesis.symspark.jvm.validators;
  *
  */
 public interface SparkValidator {	
-	public boolean validateClass(String clsName);
-	public boolean validateMethod(String methodName);
+	public boolean isValid(Instruction instruction);
 	public boolean isValid(String clsName, String methodName);
 }
