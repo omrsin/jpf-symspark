@@ -3,6 +3,7 @@ package de.tudarmstadt.thesis.symspark.listeners;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidator;
@@ -15,6 +16,7 @@ import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.vm.ChoiceGenerator;
 import gov.nasa.jpf.vm.Instruction;
+import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
 
@@ -46,21 +48,19 @@ public class MethodSequenceCoordinator {
 	}
 	
 	public void processSolution(VM vm) {
-		ChoiceGenerator<?> cg = vm.getChoiceGenerator();
-		
-		if (!(cg instanceof PCChoiceGenerator)){
-			ChoiceGenerator<?> prev_cg = cg.getPreviousChoiceGenerator();
-			while (!((prev_cg == null) || (prev_cg instanceof PCChoiceGenerator))) {
-					prev_cg = prev_cg.getPreviousChoiceGenerator();
-			}
-			cg = prev_cg;
-		}
-		
-		if ((cg instanceof PCChoiceGenerator) &&
-			      ((PCChoiceGenerator) cg).getCurrentPC() != null){
-			PathCondition pc = ((PCChoiceGenerator) cg).getCurrentPC();
+		Optional<PathCondition> option = getPathCondition(vm.getChoiceGenerator()); 
+		option.ifPresent(pc -> {
 			pc.solve();
 			values.add(((SymbolicInteger) exp).solution);
+		});
+	}
+	
+	public void processPathCondition(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
+		if(exitedMethod.getName().contains("filter")) {
+			Optional<PCChoiceGenerator> option = getPCChoiceGenerator(vm.getChoiceGenerator()); 
+			option.ifPresent(cg -> {
+				if(cg.getNextChoice() == 1) currentThread.breakTransition(true);
+			});		
 		}		
 	}
 			
@@ -74,5 +74,20 @@ public class MethodSequenceCoordinator {
 	
 	public Set<Integer> getValues() {
 		return values;
+	}
+	
+	private Optional<PathCondition> getPathCondition(ChoiceGenerator<?> cg) {
+		Optional<PCChoiceGenerator> option = getPCChoiceGenerator(cg);
+		return option.map(ccg -> ccg.getCurrentPC());
+	}
+	
+	private Optional<PCChoiceGenerator> getPCChoiceGenerator(ChoiceGenerator<?> cg) {
+		if (!(cg instanceof PCChoiceGenerator)){
+			if (cg == null) return Optional.empty();
+			PCChoiceGenerator pccg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
+			return Optional.ofNullable(pccg);
+		} else {			
+			return Optional.of((PCChoiceGenerator)cg);
+		}		
 	}
 }

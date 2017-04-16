@@ -12,8 +12,6 @@ import gov.nasa.jpf.report.Publisher;
 import gov.nasa.jpf.report.PublisherExtension;
 import gov.nasa.jpf.search.Search;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
-import gov.nasa.jpf.symbc.numeric.PathCondition;
-import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.vm.ChoiceGenerator;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
@@ -33,25 +31,6 @@ public class PathConditionListener extends PropertyListenerAdapter implements Pu
 		
 		jpf.addPublisherExtension(ConsolePublisher.class, this);
 	}
-	
-//	@Override
-//	public void choiceGeneratorRegistered(VM vm, ChoiceGenerator<?> nextCG, ThreadInfo currentThread,
-//			Instruction executedInstruction) {
-//		if(nextCG instanceof PCChoiceGenerator) {
-////			printPathCondition((PCChoiceGenerator)nextCG);
-//		}
-//	}	
-//
-//	@Override
-//	public void choiceGeneratorProcessed(VM vm, ChoiceGenerator<?> processedCG) {
-//		if(processedCG instanceof PCChoiceGenerator) {
-//			printPathCondition((PCChoiceGenerator)processedCG);
-//		}
-//	}
-//
-//	private void printPathCondition(PCChoiceGenerator cg) {
-//		System.out.println("A PCChoiceGenerator was registered");		
-//	}
 
 	@Override
 	public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction, Instruction executedInstruction) {
@@ -61,6 +40,17 @@ public class PathConditionListener extends PropertyListenerAdapter implements Pu
 	@Override
 	public void stateBacktracked(Search search) {
 		coordinator.processSolution(search.getVM());		
+	}
+	
+	@Override
+	public void methodExited(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
+		coordinator.processPathCondition(vm, currentThread, exitedMethod);		
+	}
+	
+	@Override
+	public void propertyViolated(Search search) {
+		//TODO: Do something if a PathCondition is unsatisfiable
+		System.out.println("Property violated");
 	}
 
 	@Override
@@ -72,34 +62,7 @@ public class PathConditionListener extends PropertyListenerAdapter implements Pu
 		}		
 		pw.println(coordinator.getExpression());
 		pw.println(coordinator.getValues());
-	}
-	
-	@Override
-	public void methodExited(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {		
-		/*somehow, when the call method is exited then I would have to kill that search path 
-		 * if the path traced was the false path in the filter method
-		 */
-		if(exitedMethod.getName().contains("filter")) {
-			ChoiceGenerator<?> cg = vm.getChoiceGenerator();
-			
-			if (!(cg instanceof PCChoiceGenerator)){
-				ChoiceGenerator<?> prev_cg = cg.getPreviousChoiceGenerator();
-				while (!((prev_cg == null) || (prev_cg instanceof PCChoiceGenerator))) {
-						prev_cg = prev_cg.getPreviousChoiceGenerator();
-				}
-				cg = prev_cg;
-			}
-			
-			if ((cg instanceof PCChoiceGenerator) &&
-				      ((PCChoiceGenerator) cg).getCurrentPC() != null){
-				if(((PCChoiceGenerator) cg).getNextChoice() == 1) {
-//					System.out.println("Testing backtracking");
-//					vm.backtrack();
-					currentThread.breakTransition(true);
-				}
-			}			
-		}		
-	}
+	}	
 
 	@Override
 	public void choiceGeneratorRegistered(VM vm, ChoiceGenerator<?> nextCG, ThreadInfo currentThread, Instruction executedInstruction) {
