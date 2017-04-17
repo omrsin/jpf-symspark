@@ -1,5 +1,7 @@
 package de.tudarmstadt.thesis.symspark.jvm.validators;
 
+import java.util.Optional;
+
 import gov.nasa.jpf.vm.Instruction;
 
 /**
@@ -12,6 +14,10 @@ import gov.nasa.jpf.vm.Instruction;
  *
  */
 public interface SparkValidator {	
-	public boolean isValid(Instruction instruction);
-	public boolean isValid(String clsName, String methodName);
+	public boolean isSparkMethod(Instruction instruction);
+	public boolean isSparkMethod(String clsName, String methodName);
+	public boolean isInternalMethod(Instruction instruction);
+	public boolean isInternalMethod(String clsName, String methodName);
+	public Optional<String> getSparkMethod(Instruction instruction);
+	public Optional<String> getSparkMethod(String clsName, String methodName);
 }

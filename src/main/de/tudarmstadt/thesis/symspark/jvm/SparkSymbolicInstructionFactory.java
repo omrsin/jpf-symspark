@@ -33,7 +33,7 @@ public class SparkSymbolicInstructionFactory extends SymbolicInstructionFactory 
 
 	@Override
 	public Instruction invokevirtual(String clsName, String methodName, String methodSignature) {
-		if(validator.isValid(clsName, methodName)) {
+		if(validator.isSparkMethod(clsName, methodName)) {
 			return new INVOKEVIRTUAL(clsName, methodName, methodSignature);
 		}		
 		return super.invokevirtual(clsName, methodName, methodSignature);
