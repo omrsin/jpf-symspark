@@ -1,7 +1,10 @@
+de.tudarmstadt.thesis.symspark.examples.java.filter
+de.tudarmstadt.thesis.symspark.examples.java.map
 de.tudarmstadt.thesis.symspark.jvm
 de.tudarmstadt.thesis.symspark.jvm.bytecode
 de.tudarmstadt.thesis.symspark.jvm.validators
 de.tudarmstadt.thesis.symspark.listeners
+de.tudarmstadt.thesis.symspark.util
 org.apache.spark
 org.apache.spark.api.java
 org.apache.spark.api.java.function
