@@ -11,6 +11,7 @@ import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidatorFactory;
 import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL;
+import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
 import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
@@ -25,12 +26,14 @@ public class MethodSequenceCoordinator {
 	private final SparkValidator validator;
 	private MethodStrategy methodStrategy;
 	private List<String> methods;
-	private Set<Integer> values;	
+	private Set<Integer> values;
+	private Expression inputExpression;
 	
 	public MethodSequenceCoordinator(Config conf) {
 		methods = new ArrayList<String>();
 		values = new HashSet<Integer>();
-		validator = SparkValidatorFactory.getValidator(conf);		
+		validator = SparkValidatorFactory.getValidator(conf);
+		inputExpression = null;
 	}
 	
 	/**
@@ -46,18 +49,21 @@ public class MethodSequenceCoordinator {
 			prepareSparkMethod(instruction);
 		} else if(validator.isInternalMethod(instruction)){
 			methodStrategy.preProcessing(currentThread, instruction);
+			if(inputExpression == null) {
+				inputExpression = methodStrategy.getExpression();
+			}
 		}	
 	}	
 	
 	public void processSolution(VM vm) {
 		Optional<PathCondition> option = PCChoiceGeneratorUtils.getPathCondition(vm.getChoiceGenerator()); 
 		option.ifPresent(pc -> {
-			pc.solve();
-			values.add(((SymbolicInteger) methodStrategy.getExpression()).solution);
+			pc.solve();			
+			values.add(((SymbolicInteger) inputExpression).solution);
 		});
 	}
 	
-	public void processPathCondition(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
+	public void percolateToNextMethod(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
 		if(methodStrategy != null) {
 			methodStrategy.postProcessing(vm, currentThread, exitedMethod);
 		}
@@ -97,6 +103,9 @@ public class MethodSequenceCoordinator {
 		switch (method) {
 		case "filter":
 			methodStrategy = new FilterStrategy(Optional.ofNullable(methodStrategy));
+			break;
+		case "map":
+			methodStrategy = new MapStrategy(Optional.ofNullable(methodStrategy));
 			break;
 		default:
 			break;

@@ -43,7 +43,7 @@ public class PathConditionListener extends PropertyListenerAdapter implements Pu
 	
 	@Override
 	public void methodExited(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
-		coordinator.processPathCondition(vm, currentThread, exitedMethod);		
+		coordinator.percolateToNextMethod(vm, currentThread, exitedMethod);		
 	}
 	
 	@Override
@@ -58,28 +58,27 @@ public class PathConditionListener extends PropertyListenerAdapter implements Pu
 		publisher.publishTopicStart("PathConditionListener Test");
 		for (String method: coordinator.getMethods()) {
 			pw.println("method: "+ method);
-		}		
-//		pw.println(coordinator.getExpression());
+		}
 		pw.println(coordinator.getValues());
 	}	
 
-	@Override
-	public void choiceGeneratorRegistered(VM vm, ChoiceGenerator<?> nextCG, ThreadInfo currentThread, Instruction executedInstruction) {
-		System.out.println("CG registered: "+nextCG.getClass().getSimpleName());
-	}
-
-	@Override
-	public void choiceGeneratorSet(VM vm, ChoiceGenerator<?> newCG) {
-		System.out.println("CG set: "+newCG.getClass().getSimpleName());
-	}
-
-	@Override
-	public void choiceGeneratorAdvanced(VM vm, ChoiceGenerator<?> currentCG) {
-		System.out.println("CG advanced: "+currentCG.getClass().getSimpleName());
-	}
-
-	@Override
-	public void choiceGeneratorProcessed(VM vm, ChoiceGenerator<?> processedCG) {
-		System.out.println("CG processed: "+processedCG.getClass().getSimpleName());
-	}	
+//	@Override
+//	public void choiceGeneratorRegistered(VM vm, ChoiceGenerator<?> nextCG, ThreadInfo currentThread, Instruction executedInstruction) {
+//		System.out.println("CG registered: "+nextCG.getClass().getSimpleName());
+//	}
+//
+//	@Override
+//	public void choiceGeneratorSet(VM vm, ChoiceGenerator<?> newCG) {
+//		System.out.println("CG set: "+newCG.getClass().getSimpleName());
+//	}
+//
+//	@Override
+//	public void choiceGeneratorAdvanced(VM vm, ChoiceGenerator<?> currentCG) {
+//		System.out.println("CG advanced: "+currentCG.getClass().getSimpleName());
+//	}
+//
+//	@Override
+//	public void choiceGeneratorProcessed(VM vm, ChoiceGenerator<?> processedCG) {
+//		System.out.println("CG processed: "+processedCG.getClass().getSimpleName());
+//	}	
 }

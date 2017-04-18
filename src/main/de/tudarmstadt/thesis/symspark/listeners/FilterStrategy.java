@@ -15,19 +15,19 @@ public class FilterStrategy extends AbstractMethodStrategy {
 
 	public FilterStrategy(Optional<MethodStrategy> optional) {		
 		optional.ifPresent(methodStrategy -> {
-			this.expr = methodStrategy.getExpression();			
+			this.expression = methodStrategy.getExpression();			
 		});
 	}
 
 	@Override
 	public void preProcessing(ThreadInfo currentThread, Instruction ins) {
+		//TODO: This validation could and should be done by the validator
 		if(ins instanceof INVOKEVIRTUAL && ((INVOKEVIRTUAL)ins).getInvokedMethodName().contains("call")) {
-			if(expr == null) {
-				expr = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(1);
+			if(expression == null) {
+				expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(1);
 			}
-			currentThread.getModifiableTopFrame().setLocalAttr(1, expr);			
-		}	
-
+			currentThread.getModifiableTopFrame().setLocalAttr(1, expression);			
+		}
 	}
 
 	@Override
