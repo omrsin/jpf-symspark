@@ -4,7 +4,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import de.tudarmstadt.thesis.symspark.jvm.bytecode.INVOKEVIRTUAL;
-import de.tudarmstadt.thesis.symspark.jvm.validators.JavaSparkValidator;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidator;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidatorFactory;
 import gov.nasa.jpf.Config;

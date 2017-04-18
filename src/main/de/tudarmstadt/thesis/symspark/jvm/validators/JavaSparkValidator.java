@@ -1,7 +1,9 @@
 package de.tudarmstadt.thesis.symspark.jvm.validators;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import de.tudarmstadt.thesis.symspark.jvm.bytecode.INVOKEVIRTUAL;
 import gov.nasa.jpf.Config;
@@ -21,8 +23,12 @@ public class JavaSparkValidator implements SparkValidator {
 	private String[] sparkMethods;
 	
 	public JavaSparkValidator(Config conf) {
-		//TODO consider creating a control group to filter methods written in the property file that don't belong to spark
-		this.sparkMethods = conf.getStringArray("spark.methods");
+		List<String> allSparkMethods = Arrays.stream(SparkMethods.values()).parallel().map(e -> e.name().toLowerCase()).collect(Collectors.toList());
+		String[] validSelectedMethods = Arrays.asList(conf.getStringArray("spark.methods")).stream()
+				.filter(allSparkMethods::contains)
+				.toArray(String[]::new);				
+		
+		this.sparkMethods = validSelectedMethods;
 	}	
 	
 	@Override	
