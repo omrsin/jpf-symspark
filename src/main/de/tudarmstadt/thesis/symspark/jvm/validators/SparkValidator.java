@@ -14,6 +14,8 @@ import gov.nasa.jpf.vm.Instruction;
  *
  */
 public interface SparkValidator {	
+	public static String SPARK_METHODS = "spark.methods";
+	
 	public boolean isSparkMethod(Instruction instruction);
 	public boolean isSparkMethod(String clsName, String methodName);
 	public boolean isInternalMethod(Instruction instruction);

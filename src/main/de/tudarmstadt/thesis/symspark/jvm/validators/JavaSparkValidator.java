@@ -23,8 +23,10 @@ public class JavaSparkValidator implements SparkValidator {
 	private String[] sparkMethods;
 	
 	public JavaSparkValidator(Config conf) {
-		List<String> allSparkMethods = Arrays.stream(SparkMethods.values()).parallel().map(e -> e.name().toLowerCase()).collect(Collectors.toList());
-		String[] validSelectedMethods = Arrays.asList(conf.getStringArray("spark.methods")).stream()
+		List<String> allSparkMethods = Arrays.stream(SparkMethod.values()).parallel()
+				.map(e -> e.name().toLowerCase())
+				.collect(Collectors.toList());
+		String[] validSelectedMethods = Arrays.asList(conf.getStringArray(SPARK_METHODS)).stream().parallel()
 				.filter(allSparkMethods::contains)
 				.toArray(String[]::new);				
 		

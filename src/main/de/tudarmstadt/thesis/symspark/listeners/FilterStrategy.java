@@ -2,6 +2,7 @@ package de.tudarmstadt.thesis.symspark.listeners;
 
 import java.util.Optional;
 
+import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
 import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
 import gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL;
 import gov.nasa.jpf.symbc.numeric.Expression;
@@ -32,7 +33,8 @@ public class FilterStrategy extends AbstractMethodStrategy {
 
 	@Override
 	public void postProcessing(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
-		if(exitedMethod.getName().contains("filter")) {
+		SparkMethod sparkMethod = SparkMethod.getSparkMethod(exitedMethod.getName());
+		if(sparkMethod == SparkMethod.FILTER) {
 			Optional<PCChoiceGenerator> option = PCChoiceGeneratorUtils.getPCChoiceGenerator(vm.getChoiceGenerator()); 
 			option.ifPresent(cg -> {
 				if(cg.getNextChoice() == 1) currentThread.breakTransition(true);

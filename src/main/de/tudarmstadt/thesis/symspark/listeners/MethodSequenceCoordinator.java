@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidator;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidatorFactory;
 import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
 import gov.nasa.jpf.Config;
-import gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
@@ -86,8 +86,11 @@ public class MethodSequenceCoordinator {
 	 */
 	private void prepareSparkMethod(Instruction instruction) {
 		Optional<String> option = validator.getSparkMethod(instruction); 
-		option.ifPresent(this::switchMethodStrategy);		
-		methods.add(((INVOKEVIRTUAL) instruction).getInvokedMethod().getName());
+		option.map(SparkMethod::getSparkMethod)
+			.ifPresent(sparkMethod -> {
+				switchMethodStrategy(sparkMethod);
+				methods.add(sparkMethod.name());
+			});		
 	}
 	
 	/**
@@ -97,12 +100,12 @@ public class MethodSequenceCoordinator {
 	 * @param method Name of the spark method that was detected.
 	 */
 	//TODO: Consider extracting the handling of the methodStrategy to another class something like a Factory maybe but that chooses from a list of already instantiated methodStrategy objects.
-	private void switchMethodStrategy(String method) {
-		switch (method) {
-		case "filter":
+	private void switchMethodStrategy(SparkMethod sparkMethod) {
+		switch (sparkMethod) {
+		case FILTER:
 			methodStrategy = new FilterStrategy(Optional.ofNullable(methodStrategy));
 			break;
-		case "map":
+		case MAP:
 			methodStrategy = new MapStrategy(Optional.ofNullable(methodStrategy));
 			break;
 		default:
