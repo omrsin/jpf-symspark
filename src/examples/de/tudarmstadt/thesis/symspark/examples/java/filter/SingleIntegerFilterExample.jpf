@@ -1,0 +1,11 @@
+@using=jpf-symspark
+
+jpf-spark.package_path=de.tudarmstadt.thesis.symspark.examples.java.filter
+
+target=${jpf-spark.package_path}.SingleIntegerFilterExample
+
+symbolic.dp=choco
+
+listener = de.tudarmstadt.thesis.symspark.listeners.PathConditionListener
+
+spark.methods=filter
