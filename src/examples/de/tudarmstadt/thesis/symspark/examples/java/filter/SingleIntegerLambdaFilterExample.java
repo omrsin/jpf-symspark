@@ -10,15 +10,15 @@ import org.apache.spark.api.java.function.Function;
 
 /**
  * Example with a single filter transformation implemented
- * as an anonymous function.
+ * as a lambda function.
  * Expected analysis result [-1000000, 3]
  * Expected execution result [3, 3, 4]
  * @author Omar Erminy (omar.erminy.ugueto@gmail.com)
  *
  */
-public class SingleIntegerFilterExample {
+public class SingleIntegerLambdaFilterExample {
 	public static void main(String[] args) {
-		System.out.println("Spark Java Single Integer Filter Test");
+		System.out.println("Spark Java Single Integer Lambda Filter Test");
 		System.out.println("Expected analysis result [-1000000, 3]");
 		System.out.println("Expected execution result [3, 3, 4]");
 		
@@ -31,11 +31,6 @@ public class SingleIntegerFilterExample {
 		List<Integer> numberList = Arrays.asList(1,2,3,3,4);
 		JavaRDD<Integer> numbers = spark.parallelize(numberList);
 		
-		numbers.filter(new Function<Integer, Boolean>() {			
-			@Override
-			public Boolean call(Integer v1) throws Exception {				
-				return v1 > 2;
-			}
-		});
+		numbers.filter(v1 -> v1 >2);
 	}
 }

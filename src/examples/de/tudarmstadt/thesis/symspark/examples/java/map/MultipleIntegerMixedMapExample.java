@@ -9,18 +9,18 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 
 /**
- * Example with a single map transformation implemented
- * as an anonymous function.
- * Expected analysis result [-1000000, 6]
- * Expected execution result [3, 6, 9, 9, 12]
+ * Example with multiple map transformations implemented
+ * as anonymous and lambda functions.
+ * Expected analysis result [-1000000, 1, 6]
+ * Expected execution result [1, 4, 6, 6, 8]
  * @author Omar Erminy (omar.erminy.ugueto@gmail.com)
  *
  */
-public class SingleIntegerMapExample {
+public class MultipleIntegerMixedMapExample {
 	public static void main(String[] args) {
-		System.out.println("Spark Java Single Integer Map Test");
-		System.out.println("Expected analysis result [-1000000, 6]");
-		System.out.println("Expected execution result [3, 6, 9, 9, 12]");
+		System.out.println("Spark Java Multiple Integer Mixed Map Test");
+		System.out.println("Expected analysis result [-1000000, 1, 6]");
+		System.out.println("Expected execution result [1, 4, 6, 6, 8]");
 		
 		SparkConf conf = new SparkConf()
 				.setAppName("JavaNumbers")
@@ -34,9 +34,10 @@ public class SingleIntegerMapExample {
 		numbers.map(new Function<Integer, Integer>() {
 			@Override
 			public Integer call(Integer v1) throws Exception {
-				if(v1 > 5) return v1*2;
-				else return v1*3;
+				if(v1 > 5) return v1*3;
+				else return v1*2;
 			}			
-		});
+		})
+		.map(v1 -> {if(v1 == 2) return 1; else return v1; });
 	}
 }

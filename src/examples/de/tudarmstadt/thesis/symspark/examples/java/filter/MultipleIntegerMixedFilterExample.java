@@ -9,17 +9,17 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 
 /**
- * Example with a single filter transformation implemented
- * as an anonymous function.
- * Expected analysis result [-1000000, 3]
+ * Example with multiple filter transformations implemented
+ * as anonymous and lambda functions.
+ * Expected analysis result [-1000000, 3, 7]
  * Expected execution result [3, 3, 4]
  * @author Omar Erminy (omar.erminy.ugueto@gmail.com)
  *
  */
-public class SingleIntegerFilterExample {
+public class MultipleIntegerMixedFilterExample {
 	public static void main(String[] args) {
-		System.out.println("Spark Java Single Integer Filter Test");
-		System.out.println("Expected analysis result [-1000000, 3]");
+		System.out.println("Spark Java Multiple Integer Mixed Filter Test");
+		System.out.println("Expected analysis result [-1000000, 3, 7]");
 		System.out.println("Expected execution result [3, 3, 4]");
 		
 		SparkConf conf = new SparkConf()
@@ -30,12 +30,13 @@ public class SingleIntegerFilterExample {
 		
 		List<Integer> numberList = Arrays.asList(1,2,3,3,4);
 		JavaRDD<Integer> numbers = spark.parallelize(numberList);
-		
+
 		numbers.filter(new Function<Integer, Boolean>() {			
 			@Override
 			public Boolean call(Integer v1) throws Exception {				
 				return v1 > 2;
 			}
-		});
+		})
+		.filter(v1 -> v1 <= 6);
 	}
 }
