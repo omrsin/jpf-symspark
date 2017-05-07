@@ -12,6 +12,7 @@ import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidatorFactory;
 import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.numeric.Expression;
+import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
 import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.vm.Instruction;
@@ -23,15 +24,19 @@ public class MethodSequenceCoordinator {
 	
 	private final SparkValidator validator;
 	private MethodStrategy methodStrategy;
-	private List<String> methods;
+	private List<String> methods;	
 	private Set<Integer> values;
 	private Expression inputExpression;
+	
+	private boolean isFirstBacktrack;
+	private String lastMethod;
 	
 	public MethodSequenceCoordinator(Config conf) {
 		methods = new ArrayList<String>();
 		values = new HashSet<Integer>();
 		validator = SparkValidatorFactory.getValidator(conf);
 		inputExpression = null;
+		isFirstBacktrack = true;
 	}
 	
 	/**
@@ -43,7 +48,9 @@ public class MethodSequenceCoordinator {
 	 * @param instruction Executed instruction detected in the listener. Should be INVOKEVIRTUAL
 	 */
 	public void detectSparkInstruction(ThreadInfo currentThread, Instruction instruction) {
-		if(validator.isSparkMethod(instruction)) {
+//		Config conf = currentThread.getVM().getConfig();
+//		List<String> validMethods =	Arrays.asList(Optional.ofNullable(conf.getStringArray("symbolic.method")).orElse(new String[0]));
+		if(validator.isSparkMethod(instruction)) {			
 			prepareSparkMethod(instruction);
 		} else if(validator.isInternalMethod(instruction)){
 			methodStrategy.preProcessing(currentThread, instruction);
@@ -53,14 +60,24 @@ public class MethodSequenceCoordinator {
 		}	
 	}	
 	
+	//TODO: Now this is not only processing the solution, it is backtracking the state of the method strategy also, change the name to explain better what this method does
 	public void processSolution(VM vm) {
-		Optional<PathCondition> option = PCChoiceGeneratorUtils.getPathCondition(vm.getChoiceGenerator()); 
-		option.ifPresent(pc -> {
-			pc.solve();			
-			values.add(((SymbolicInteger) inputExpression).solution);
+		Optional<PCChoiceGenerator> option = PCChoiceGeneratorUtils.getPCChoiceGenerator(vm.getChoiceGenerator());
+		option.ifPresent(pccg -> {
+			if(isFirstBacktrack) {
+				lastMethod = pccg.getMethodName();				
+				isFirstBacktrack = false;
+			}
+			//TODO: This is done to restore the right method strategy. Not very clean at least by the looks
+			prepareSparkMethod(pccg.getThreadInfo().getCallerStackFrame().getPrevious().getPrevious().getPC());
+			if(lastMethod.equals(pccg.getMethodName())) {
+				pccg.getCurrentPC().solve();
+				values.add(((SymbolicInteger) inputExpression).solution);
+			}						
 		});
 	}
 	
+	//TODO: This method should validate first if the invoked method is relevant to the strategy and discard those who are not
 	public void percolateToNextMethod(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
 		if(methodStrategy != null) {
 			methodStrategy.postProcessing(vm, currentThread, exitedMethod);

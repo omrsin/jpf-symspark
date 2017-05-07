@@ -7,6 +7,9 @@ import java.util.stream.Collectors;
 
 import de.tudarmstadt.thesis.symspark.jvm.bytecode.INVOKEVIRTUAL;
 import gov.nasa.jpf.Config;
+import gov.nasa.jpf.jvm.bytecode.INVOKEDYNAMIC;
+import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
+import gov.nasa.jpf.symbc.bytecode.INVOKESTATIC;
 import gov.nasa.jpf.vm.Instruction;
 
 /**
@@ -19,6 +22,7 @@ public class JavaSparkValidator implements SparkValidator {
 	private static final String CLASS_NAME = "JavaRDD";
 	private static final String FULL_CLASS_NAME = "org.apache.spark.api.java.JavaRDD";
 	private static final String INTERNAL_METHOD = "call";
+	private static final String INTERNAL_LAMBDA_METHOD = "lambda$";
 	
 	private String[] sparkMethods;
 	
@@ -48,9 +52,9 @@ public class JavaSparkValidator implements SparkValidator {
 		
 	@Override
 	public boolean isInternalMethod(Instruction instruction) {
-		if(instruction instanceof gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL) {
-			String clsName = ((gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL)instruction).getInvokedMethodClassName();
-			String methodName = ((gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL)instruction).getInvokedMethodName();
+		if(instruction instanceof gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL || instruction instanceof INVOKESTATIC) {
+			String clsName = ((JVMInvokeInstruction)instruction).getInvokedMethodClassName();
+			String methodName = ((JVMInvokeInstruction)instruction).getInvokedMethodName();
 			return isInternalMethod(clsName, methodName);			
 		}
 		return false;
@@ -58,8 +62,8 @@ public class JavaSparkValidator implements SparkValidator {
 
 	@Override
 	public boolean isInternalMethod(String clsName, String methodName) {		
-		if(methodName != null) {
-			return methodName.contains(INTERNAL_METHOD);
+		if(methodName != null) {			
+			return methodName.contains(INTERNAL_METHOD) || methodName.contains(INTERNAL_LAMBDA_METHOD);			
 		} else {
 			return false;
 		}
@@ -67,11 +71,11 @@ public class JavaSparkValidator implements SparkValidator {
 
 	@Override
 	public Optional<String> getSparkMethod(Instruction instruction) {		
-		if(instruction instanceof INVOKEVIRTUAL) {
+		if(isValidInstruction(instruction)) {
 			return getSparkMethod((INVOKEVIRTUAL)instruction);
 		}		
 		return Optional.empty();
-	}
+	}	
 
 	@Override
 	public Optional<String> getSparkMethod(String clsName, String methodName) {
@@ -105,5 +109,14 @@ public class JavaSparkValidator implements SparkValidator {
 		String clsName = instruction.getInvokedMethodClassName();
 		String methodName = instruction.getInvokedMethodName();
 		return getSparkMethod(clsName, methodName);
+	}
+	
+	private boolean isValidInstruction(Instruction instruction) {
+		if(instruction instanceof INVOKEVIRTUAL) {
+			return true;
+		} else if (instruction instanceof INVOKEDYNAMIC) {
+			return true;
+		}
+		return false;
 	}
 }

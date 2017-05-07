@@ -2,6 +2,8 @@ package de.tudarmstadt.thesis.symspark.listeners;
 
 import java.util.Optional;
 
+import gov.nasa.jpf.symbc.bytecode.INVOKESTATIC;
+import gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
@@ -18,10 +20,22 @@ public class MapStrategy extends AbstractMethodStrategy implements MethodStrateg
 
 	@Override
 	public void preProcessing(ThreadInfo currentThread, Instruction ins) {
-		if(expression == null) {
-			expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(1);
+		//TODO: This validation could and should be done by the validator
+		if(ins instanceof INVOKEVIRTUAL && ((INVOKEVIRTUAL)ins).getInvokedMethodName().contains("call")) {
+			if(expression == null) {
+				expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(1);
+			}
+			currentThread.getModifiableTopFrame().setLocalAttr(1, expression);
+		} else if(ins instanceof INVOKESTATIC && ((INVOKESTATIC)ins).getInvokedMethodName().contains("lambda")) {
+			if(expression == null) {
+				expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(0);
+			}
+			currentThread.getModifiableTopFrame().setLocalAttr(0, expression);
 		}
-		currentThread.getModifiableTopFrame().setLocalAttr(1, expression);				
+//		if(expression == null) {
+//			expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(1);
+//		}
+//		currentThread.getModifiableTopFrame().setLocalAttr(1, expression);				
 	}
 
 	@Override

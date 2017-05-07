@@ -41,7 +41,7 @@ public class PathConditionListener extends PropertyListenerAdapter implements Pu
 	}
 	
 	@Override
-	public void methodExited(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
+	public void methodExited(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {		
 		coordinator.percolateToNextMethod(vm, currentThread, exitedMethod);		
 	}
 	

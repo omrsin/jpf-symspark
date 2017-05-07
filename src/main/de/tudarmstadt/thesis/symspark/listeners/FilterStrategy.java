@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
 import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
+import gov.nasa.jpf.symbc.bytecode.INVOKESTATIC;
 import gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
@@ -28,6 +29,11 @@ public class FilterStrategy extends AbstractMethodStrategy {
 				expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(1);
 			}
 			currentThread.getModifiableTopFrame().setLocalAttr(1, expression);			
+		} else if(ins instanceof INVOKESTATIC && ((INVOKESTATIC)ins).getInvokedMethodName().contains("lambda")) {
+			if(expression == null) {
+				expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(0);
+			}
+			currentThread.getModifiableTopFrame().setLocalAttr(0, expression);
 		}
 	}
 

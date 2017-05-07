@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.JPF;
 import gov.nasa.jpf.vm.ElementInfo;
@@ -48,25 +49,8 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 	}
 
 	private String buildMethodToAnalyze(ThreadInfo th) {
-		String className = ((ElementInfo)getArgumentValues(th)[0]).getClassInfo().getName();
-		int numberOfArguments = getNumberOfArguments();
-
-		return new SparkMethodBuilder()
-				   .setClassName(className)
-				   .setNumberOfArguments(numberOfArguments)
-				   .build();
-	}
-	
-	private int getNumberOfArguments() {
-		int numberOfArguments = 0;
-		String invokedMethod = getInvokedMethod().getName();		
-		if(invokedMethod.equals("filter") || invokedMethod.equals("map")) {
-			numberOfArguments = 1;
-		} else if(invokedMethod.equals("reduce")) {
-			numberOfArguments = 2;
-		}		
-		return numberOfArguments;
-	}
+		return new SparkMethodBuilder().build(th);
+	}	
 
 	private String join(List<String> list, String separator) {
 		StringBuilder builder = new StringBuilder();
@@ -76,6 +60,7 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 		return builder.toString();
 	}	
 	
+	//TODO: Move the responsibility to another method. Maybe extract the internal class SparkMethodBuilder to an external class
 	private class SparkMethodBuilder {
 				
 		private final String ARGUMENT_NAME = "sym";
@@ -94,6 +79,7 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 				this.className = classPath;
 				this.methodName = "lambda$"+methodNumber;
 			} else {
+				LOGGER.log(Level.FINER, CLASS + "Invoked from an anonymous class: "+className);
 				this.className = className;
 				this.methodName = "call";
 			}			
@@ -107,6 +93,27 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 		
 		public String build() {			
 			return className+"."+methodName+"("+produceSymbolicArguments()+")";
+		}
+		
+		public String build(ThreadInfo th) {
+			String className = ((ElementInfo)getArgumentValues(th)[0]).getClassInfo().getName();
+			int numberOfArguments = getNumberOfArguments();
+			
+			return this.setClassName(className)
+					   .setNumberOfArguments(numberOfArguments)
+					   .build();
+		}	
+
+		//TODO: In particular, move this method somewhere else
+		private int getNumberOfArguments() {
+			int numberOfArguments = 0;
+			SparkMethod sparkMethod = SparkMethod.getSparkMethod(getInvokedMethod().getName());				
+			if(sparkMethod == SparkMethod.FILTER || sparkMethod == SparkMethod.MAP) {
+				numberOfArguments = 1;
+			} else if(sparkMethod == SparkMethod.REDUCE) {
+				numberOfArguments = 2;
+			}		
+			return numberOfArguments;
 		}
 		
 		private String produceSymbolicArguments() {
