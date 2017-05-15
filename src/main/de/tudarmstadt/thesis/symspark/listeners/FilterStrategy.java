@@ -44,6 +44,7 @@ public class FilterStrategy extends AbstractMethodStrategy {
 			Optional<PCChoiceGenerator> option = PCChoiceGeneratorUtils.getPCChoiceGenerator(vm.getChoiceGenerator()); 
 			option.ifPresent(cg -> {
 				if(cg.getNextChoice() == 1) currentThread.breakTransition(true);
+				endStateForced = true;
 			});		
 		}
 	}

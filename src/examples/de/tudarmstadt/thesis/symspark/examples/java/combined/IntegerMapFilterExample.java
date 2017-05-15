@@ -11,7 +11,7 @@ import org.apache.spark.api.java.function.Function;
 /**
  * Example with two transformations implemented: map and then a filter
  * as anonymous functions.
- * Expected analysis result [-1000000, 3, 7]
+ * Expected analysis result [-1000000, 3, 6, 7]
  * Expected execution result [9, 9, 12]
  * @author Omar Erminy (omar.erminy.ugueto@gmail.com)
  *
@@ -19,6 +19,8 @@ import org.apache.spark.api.java.function.Function;
 public class IntegerMapFilterExample {
 	public static void main(String[] args) {
 		System.out.println("Spark Java Multiple Integer Filter Test");
+		System.out.println("Expected analysis result [-1000000, 3, 6, 7]");
+		System.out.println("Expected execution result [9, 9, 12]");
 		
 		SparkConf conf = new SparkConf()
 				.setAppName("JavaNumbers")

@@ -28,15 +28,13 @@ public class MethodSequenceCoordinator {
 	private Set<Integer> values;
 	private Expression inputExpression;
 	
-	private boolean isFirstBacktrack;
-	private String lastMethod;
+	private boolean endStateReached = false;
 	
 	public MethodSequenceCoordinator(Config conf) {
 		methods = new ArrayList<String>();
 		values = new HashSet<Integer>();
 		validator = SparkValidatorFactory.getValidator(conf);
 		inputExpression = null;
-		isFirstBacktrack = true;
 	}
 	
 	/**
@@ -48,8 +46,6 @@ public class MethodSequenceCoordinator {
 	 * @param instruction Executed instruction detected in the listener. Should be INVOKEVIRTUAL
 	 */
 	public void detectSparkInstruction(ThreadInfo currentThread, Instruction instruction) {
-//		Config conf = currentThread.getVM().getConfig();
-//		List<String> validMethods =	Arrays.asList(Optional.ofNullable(conf.getStringArray("symbolic.method")).orElse(new String[0]));
 		if(validator.isSparkMethod(instruction)) {			
 			prepareSparkMethod(instruction);
 		} else if(validator.isInternalMethod(instruction)){
@@ -61,18 +57,18 @@ public class MethodSequenceCoordinator {
 	}	
 	
 	//TODO: Now this is not only processing the solution, it is backtracking the state of the method strategy also, change the name to explain better what this method does
-	public void processSolution(VM vm) {
+	public void processSolution(VM vm) {		
 		Optional<PCChoiceGenerator> option = PCChoiceGeneratorUtils.getPCChoiceGenerator(vm.getChoiceGenerator());
 		option.ifPresent(pccg -> {
-			if(isFirstBacktrack) {
-				lastMethod = pccg.getMethodName();				
-				isFirstBacktrack = false;
-			}
 			//TODO: This is done to restore the right method strategy. Not very clean at least by the looks
 			prepareSparkMethod(pccg.getThreadInfo().getCallerStackFrame().getPrevious().getPrevious().getPC());
-			if(lastMethod.equals(pccg.getMethodName())) {
-				pccg.getCurrentPC().solve();
-				values.add(((SymbolicInteger) inputExpression).solution);
+			if(endStateReached) {
+				if(pccg.getCurrentPC().solve()) {
+					values.add(((SymbolicInteger) inputExpression).solution);
+				} else {
+					System.out.println("No solution: trigger broken property");
+				}
+				endStateReached = false;				
 			}						
 		});
 	}
@@ -81,6 +77,7 @@ public class MethodSequenceCoordinator {
 	public void percolateToNextMethod(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
 		if(methodStrategy != null) {
 			methodStrategy.postProcessing(vm, currentThread, exitedMethod);
+			endStateReached = methodStrategy.isEndStateForced();
 		}
 	}
 			
@@ -90,6 +87,10 @@ public class MethodSequenceCoordinator {
 	
 	public Set<Integer> getValues() {
 		return values;
+	}
+	
+	public void setEndStateReached(boolean endStateReached){
+		this.endStateReached = endStateReached;
 	}
 	
 	// Private methods

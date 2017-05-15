@@ -59,25 +59,13 @@ public class PathConditionListener extends PropertyListenerAdapter implements Pu
 			pw.println("method: "+ method);
 		}
 		pw.println(coordinator.getValues());
-	}	
+	}
 
-//	@Override
-//	public void choiceGeneratorRegistered(VM vm, ChoiceGenerator<?> nextCG, ThreadInfo currentThread, Instruction executedInstruction) {
-//		System.out.println("CG registered: "+nextCG.getClass().getSimpleName());
-//	}
-//
-//	@Override
-//	public void choiceGeneratorSet(VM vm, ChoiceGenerator<?> newCG) {
-//		System.out.println("CG set: "+newCG.getClass().getSimpleName());
-//	}
-//
-//	@Override
-//	public void choiceGeneratorAdvanced(VM vm, ChoiceGenerator<?> currentCG) {
-//		System.out.println("CG advanced: "+currentCG.getClass().getSimpleName());
-//	}
-//
-//	@Override
-//	public void choiceGeneratorProcessed(VM vm, ChoiceGenerator<?> processedCG) {
-//		System.out.println("CG processed: "+processedCG.getClass().getSimpleName());
-//	}	
+	@Override
+	public void stateAdvanced(Search search) {
+		if (search.isEndState()) {
+			System.out.println("End state reached");
+			coordinator.setEndStateReached(true);
+		}
+	}	
 }
