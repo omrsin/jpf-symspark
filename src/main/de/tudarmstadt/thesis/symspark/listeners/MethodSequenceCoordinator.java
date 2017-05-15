@@ -1,8 +1,6 @@
 package de.tudarmstadt.thesis.symspark.listeners;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -13,7 +11,6 @@ import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
-import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
@@ -23,15 +20,13 @@ import gov.nasa.jpf.vm.VM;
 public class MethodSequenceCoordinator {
 	
 	private final SparkValidator validator;
-	private MethodStrategy methodStrategy;
-	private List<String> methods;	
+	private MethodStrategy methodStrategy;	
 	private Set<Integer> values;
 	private Expression inputExpression;
 	
 	private boolean endStateReached = false;
 	
 	public MethodSequenceCoordinator(Config conf) {
-		methods = new ArrayList<String>();
 		values = new HashSet<Integer>();
 		validator = SparkValidatorFactory.getValidator(conf);
 		inputExpression = null;
@@ -47,7 +42,7 @@ public class MethodSequenceCoordinator {
 	 */
 	public void detectSparkInstruction(ThreadInfo currentThread, Instruction instruction) {
 		if(validator.isSparkMethod(instruction)) {			
-			prepareSparkMethod(instruction);
+			setMethodStrategy(instruction);
 		} else if(validator.isInternalMethod(instruction)){
 			methodStrategy.preProcessing(currentThread, instruction);
 			if(inputExpression == null) {
@@ -56,16 +51,16 @@ public class MethodSequenceCoordinator {
 		}	
 	}	
 	
-	//TODO: Now this is not only processing the solution, it is backtracking the state of the method strategy also, change the name to explain better what this method does
 	public void processSolution(VM vm) {		
 		Optional<PCChoiceGenerator> option = PCChoiceGeneratorUtils.getPCChoiceGenerator(vm.getChoiceGenerator());
 		option.ifPresent(pccg -> {
-			//TODO: This is done to restore the right method strategy. Not very clean at least by the looks
-			prepareSparkMethod(pccg.getThreadInfo().getCallerStackFrame().getPrevious().getPrevious().getPC());
+			// This is done to restore the right method strategy.
+			setMethodStrategy(pccg.getThreadInfo().getCallerStackFrame().getPrevious().getPrevious().getPC());
 			if(endStateReached) {
 				if(pccg.getCurrentPC().solve()) {
 					values.add(((SymbolicInteger) inputExpression).solution);
 				} else {
+					//TODO: Do something if a PathCondition is unsatisfiable
 					System.out.println("No solution: trigger broken property");
 				}
 				endStateReached = false;				
@@ -73,7 +68,6 @@ public class MethodSequenceCoordinator {
 		});
 	}
 	
-	//TODO: This method should validate first if the invoked method is relevant to the strategy and discard those who are not
 	public void percolateToNextMethod(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
 		if(methodStrategy != null) {
 			methodStrategy.postProcessing(vm, currentThread, exitedMethod);
@@ -81,10 +75,6 @@ public class MethodSequenceCoordinator {
 		}
 	}
 			
-	public List<String> getMethods() {
-		return methods;
-	}
-	
 	public Set<Integer> getValues() {
 		return values;
 	}
@@ -102,32 +92,52 @@ public class MethodSequenceCoordinator {
 	 * 
 	 * @param instruction The JVM instruction that invokes the Spark method.
 	 */
-	private void prepareSparkMethod(Instruction instruction) {
+	private void setMethodStrategy(Instruction instruction) {
 		Optional<String> option = validator.getSparkMethod(instruction); 
 		option.map(SparkMethod::getSparkMethod)
 			.ifPresent(sparkMethod -> {
-				switchMethodStrategy(sparkMethod);
-				methods.add(sparkMethod.name());
+				methodStrategy = MethodStrategyFactory.switchMethodStrategy(sparkMethod, methodStrategy);
 			});		
-	}
-	
-	/**
-	 * Switches the methodStrategy to one that is able to deal with the upcoming 
-	 * spark method.
-	 * 
-	 * @param method Name of the spark method that was detected.
-	 */
-	//TODO: Consider extracting the handling of the methodStrategy to another class something like a Factory maybe but that chooses from a list of already instantiated methodStrategy objects.
-	private void switchMethodStrategy(SparkMethod sparkMethod) {
-		switch (sparkMethod) {
-		case FILTER:
-			methodStrategy = new FilterStrategy(Optional.ofNullable(methodStrategy));
-			break;
-		case MAP:
-			methodStrategy = new MapStrategy(Optional.ofNullable(methodStrategy));
-			break;
-		default:
-			break;
-		}		
 	}	
+	
+	 /**
+	  * This internal static class aims to switch among already instantiated strategies
+	  * with their expression updated to the correct value accordingly
+	  * @author Omar Erminy (omar.erminy.ugueto@gmail.com)
+	  *
+	  */
+	private static class MethodStrategyFactory {
+		static FilterStrategy filterStrategy =  new FilterStrategy(Optional.empty());
+		static MapStrategy mapStrategy = new MapStrategy(Optional.empty());
+
+		/**
+		 * Switches the method strategy to one that is able to deal with the upcoming 
+		 * spark method.
+		 * @param sparkMethod Upcoming supported Spark method.
+		 * @param methodStrategy Current active method strategy.
+		 * @return Matching method strategy for the upcoming Spark method. 
+		 */
+		public static MethodStrategy switchMethodStrategy(SparkMethod sparkMethod, MethodStrategy methodStrategy) {			
+			switch (sparkMethod) {
+			case FILTER:				
+				return updateMethodStrategyExpression(filterStrategy, Optional.ofNullable(methodStrategy)) ;
+			case MAP:				
+				return updateMethodStrategyExpression(mapStrategy, Optional.ofNullable(methodStrategy));
+			default:
+				throw new IllegalArgumentException("Invalid SparkMethod. No suitable strategy found");				
+			}
+		}
+		
+		/**
+		 * Updates the expression of the selected method strategy.
+		 * @param methodStrategy Selected method strategy.
+		 * @param option Optional value with the current method strategy. Empty if no method 
+		 * strategy has been set up yet.
+		 * @return
+		 */
+		private static MethodStrategy updateMethodStrategyExpression(MethodStrategy methodStrategy, Optional<MethodStrategy> option) {
+			option.ifPresent(ms -> methodStrategy.setExpression(ms.getExpression()));
+			return methodStrategy;
+		}
+	}
 }

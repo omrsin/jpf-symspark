@@ -31,12 +31,9 @@ public class MapStrategy extends AbstractMethodStrategy implements MethodStrateg
 				expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(0);
 			}
 			currentThread.getModifiableTopFrame().setLocalAttr(0, expression);
-		}
-//		if(expression == null) {
-//			expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(1);
-//		}
-//		currentThread.getModifiableTopFrame().setLocalAttr(1, expression);				
-	}
+		}				
+	}	
+	
 
 	@Override
 	public void postProcessing(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {

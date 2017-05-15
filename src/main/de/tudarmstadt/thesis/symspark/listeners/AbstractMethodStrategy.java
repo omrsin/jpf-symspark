@@ -20,5 +20,5 @@ public abstract class AbstractMethodStrategy implements MethodStrategy {
 
 	public void setEndStateForced(boolean endStateForced) {
 		this.endStateForced = endStateForced;
-	}	 
+	}		
 }

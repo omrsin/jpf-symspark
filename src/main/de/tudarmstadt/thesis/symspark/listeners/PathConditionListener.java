@@ -46,18 +46,9 @@ public class PathConditionListener extends PropertyListenerAdapter implements Pu
 	}
 	
 	@Override
-	public void propertyViolated(Search search) {
-		//TODO: Do something if a PathCondition is unsatisfiable
-		System.out.println("Property violated");
-	}
-
-	@Override
 	public void publishFinished(Publisher publisher) {
 		PrintWriter pw = publisher.getOut();
-		publisher.publishTopicStart("PathConditionListener Test");
-		for (String method: coordinator.getMethods()) {
-			pw.println("method: "+ method);
-		}
+		publisher.publishTopicStart("PathConditionListener");
 		pw.println(coordinator.getValues());
 	}
 

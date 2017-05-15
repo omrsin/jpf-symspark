@@ -60,7 +60,7 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 		return builder.toString();
 	}	
 	
-	//TODO: Move the responsibility to another method. Maybe extract the internal class SparkMethodBuilder to an external class
+	//XXX: Move the responsibility to another method. Maybe extract the internal class SparkMethodBuilder to an external class
 	private class SparkMethodBuilder {
 				
 		private final String ARGUMENT_NAME = "sym";
@@ -104,7 +104,6 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 					   .build();
 		}	
 
-		//TODO: In particular, move this method somewhere else
 		private int getNumberOfArguments() {
 			int numberOfArguments = 0;
 			SparkMethod sparkMethod = SparkMethod.getSparkMethod(getInvokedMethod().getName());				
