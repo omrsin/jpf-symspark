@@ -31,5 +31,8 @@ public class SingleIntegerLambdaFilterExample {
 		JavaRDD<Integer> numbers = spark.parallelize(numberList);
 		
 		numbers.filter(v1 -> v1 >2);
+		
+		spark.stop();
+		spark.close();
 	}
 }

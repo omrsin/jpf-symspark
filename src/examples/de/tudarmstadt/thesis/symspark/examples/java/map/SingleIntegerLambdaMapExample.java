@@ -33,5 +33,8 @@ public class SingleIntegerLambdaMapExample {
 		numbers.map(v1 -> {
 			if(v1 > 5) return v1*2; else return v1*3;
 		});
+		
+		spark.stop();
+		spark.close();
 	}
 }

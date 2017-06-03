@@ -39,5 +39,8 @@ public class MultipleIntegerMixedMapExample {
 			}			
 		})
 		.map(v1 -> {if(v1 == 2) return 1; else return v1; });
+		
+		spark.stop();
+		spark.close();
 	}
 }

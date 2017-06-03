@@ -37,5 +37,8 @@ public class SingleIntegerFilterExample {
 				return v1 > 2;
 			}
 		});
+		
+		spark.stop();
+		spark.close();
 	}
 }

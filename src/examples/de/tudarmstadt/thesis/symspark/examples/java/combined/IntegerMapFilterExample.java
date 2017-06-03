@@ -44,5 +44,8 @@ public class IntegerMapFilterExample {
 				return v1 > 6;
 			}
 		});
+		
+		spark.stop();
+		spark.close();
 	}
 }

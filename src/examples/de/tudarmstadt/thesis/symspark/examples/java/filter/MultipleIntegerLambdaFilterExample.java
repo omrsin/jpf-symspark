@@ -32,5 +32,8 @@ public class MultipleIntegerLambdaFilterExample {
 		
 		numbers.filter(v1 -> v1 > 2)
 		   	   .filter(v1 -> v1 <= 6);
+		
+		spark.stop();
+		spark.close();
 	}
 }

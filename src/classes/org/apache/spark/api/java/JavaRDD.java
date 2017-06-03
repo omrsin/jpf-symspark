@@ -1,5 +1,6 @@
 package org.apache.spark.api.java;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.spark.api.java.function.Function;
@@ -28,12 +29,13 @@ public class JavaRDD<T> {
 		return this;
 	}
 	
-	public <R> JavaRDD<R> map(Function<T, R> f) {		
+	public <R> JavaRDD<R> map(Function<T, R> f) {
+		List<R> list_r = new ArrayList<R>();		 
 		try {
-			f.call(list_t.get(0));
+			list_r.add(f.call(list_t.get(0)));
 		} catch (Exception e) {
 			e.printStackTrace();
-		} return (JavaRDD<R>) this;
+		} return new JavaRDD<R>(list_r);
 	}
 	
 	public T reduce(Function2<T, T, T> f) {		

@@ -46,17 +46,17 @@ public class PathConditionListener extends PropertyListenerAdapter implements Pu
 	}
 	
 	@Override
-	public void publishFinished(Publisher publisher) {
-		PrintWriter pw = publisher.getOut();
-		publisher.publishTopicStart("PathConditionListener");
-		pw.println(coordinator.getValues());
-	}
-
-	@Override
 	public void stateAdvanced(Search search) {
 		if (search.isEndState()) {
 			System.out.println("End state reached");
 			coordinator.setEndStateReached(true);
 		}
-	}	
+	}
+	
+	@Override
+	public void publishFinished(Publisher publisher) {
+		PrintWriter pw = publisher.getOut();
+		publisher.publishTopicStart("PathConditionListener");
+		pw.println(coordinator.getValues());
+	}		
 }

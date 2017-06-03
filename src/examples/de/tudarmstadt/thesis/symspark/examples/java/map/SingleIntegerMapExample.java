@@ -38,5 +38,8 @@ public class SingleIntegerMapExample {
 				else return v1*3;
 			}			
 		});
+		
+		spark.stop();
+		spark.close();
 	}
 }

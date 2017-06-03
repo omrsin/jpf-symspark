@@ -11,6 +11,7 @@ import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
+import gov.nasa.jpf.symbc.string.StringSymbolic;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
@@ -21,13 +22,13 @@ public class MethodSequenceCoordinator {
 	
 	private final SparkValidator validator;
 	private MethodStrategy methodStrategy;	
-	private Set<Integer> values;
+	private Set<String> values;
 	private Expression inputExpression;
 	
 	private boolean endStateReached = false;
 	
 	public MethodSequenceCoordinator(Config conf) {
-		values = new HashSet<Integer>();
+		values = new HashSet<String>();
 		validator = SparkValidatorFactory.getValidator(conf);
 		inputExpression = null;
 	}
@@ -44,6 +45,7 @@ public class MethodSequenceCoordinator {
 		if(validator.isSparkMethod(instruction)) {			
 			setMethodStrategy(instruction);
 		} else if(validator.isInternalMethod(instruction)){
+			//TODO: This gets triggered even if the instruction was not selected in the properties (e.g. no map)
 			methodStrategy.preProcessing(currentThread, instruction);
 			if(inputExpression == null) {
 				inputExpression = methodStrategy.getExpression();
@@ -58,16 +60,16 @@ public class MethodSequenceCoordinator {
 			setMethodStrategy(pccg.getThreadInfo().getCallerStackFrame().getPrevious().getPrevious().getPC());
 			if(endStateReached) {
 				if(pccg.getCurrentPC().solve()) {
-					values.add(((SymbolicInteger) inputExpression).solution);
-				} else {
+					values.add(getSolution());
+				} else {					
 					//TODO: Do something if a PathCondition is unsatisfiable
-					System.out.println("No solution: trigger broken property");
+					System.out.println("Current path condition not satisfiable: "+pccg.getCurrentPC());
 				}
 				endStateReached = false;				
 			}						
 		});
-	}
-	
+	}	
+
 	public void percolateToNextMethod(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
 		if(methodStrategy != null) {
 			methodStrategy.postProcessing(vm, currentThread, exitedMethod);
@@ -75,7 +77,7 @@ public class MethodSequenceCoordinator {
 		}
 	}
 			
-	public Set<Integer> getValues() {
+	public Set<String> getValues() {
 		return values;
 	}
 	
@@ -98,7 +100,18 @@ public class MethodSequenceCoordinator {
 			.ifPresent(sparkMethod -> {
 				methodStrategy = MethodStrategyFactory.switchMethodStrategy(sparkMethod, methodStrategy);
 			});		
-	}	
+	}
+	
+	private String getSolution() {
+		if(inputExpression instanceof SymbolicInteger) {
+			return String.valueOf(((SymbolicInteger) inputExpression).solution);
+		} else if (inputExpression instanceof StringSymbolic) {
+			StringSymbolic symString = ((StringSymbolic) inputExpression);
+			
+			return symString.solution;
+		}
+		return null;
+	}
 	
 	 /**
 	  * This internal static class aims to switch among already instantiated strategies
@@ -136,8 +149,11 @@ public class MethodSequenceCoordinator {
 		 * @return
 		 */
 		private static MethodStrategy updateMethodStrategyExpression(MethodStrategy methodStrategy, Optional<MethodStrategy> option) {
-			option.ifPresent(ms -> methodStrategy.setExpression(ms.getExpression()));
+			option.ifPresent(ms -> {				
+				methodStrategy.setExpression(ms.getExpression());
+				methodStrategy.setEndStateForced(false);
+			});
 			return methodStrategy;
-		}
+		}		
 	}
 }

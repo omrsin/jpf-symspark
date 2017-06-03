@@ -38,5 +38,8 @@ public class MultipleIntegerMixedFilterExample {
 			}
 		})
 		.filter(v1 -> v1 <= 6);
+		
+		spark.stop();
+		spark.close();
 	}
 }

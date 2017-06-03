@@ -43,8 +43,10 @@ public class FilterStrategy extends AbstractMethodStrategy {
 		if(sparkMethod == SparkMethod.FILTER) {
 			Optional<PCChoiceGenerator> option = PCChoiceGeneratorUtils.getPCChoiceGenerator(vm.getChoiceGenerator()); 
 			option.ifPresent(cg -> {
-				if(cg.getNextChoice() == 1) currentThread.breakTransition(true);
-				endStateForced = true;
+				if(cg.getNextChoice() == 1) {
+					currentThread.breakTransition(true);
+					endStateForced = true;
+				}				
 			});		
 		}
 	}

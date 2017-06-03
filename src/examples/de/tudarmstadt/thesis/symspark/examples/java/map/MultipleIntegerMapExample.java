@@ -45,5 +45,8 @@ public class MultipleIntegerMapExample {
 				else return v1;				
 			}			
 		});
+		
+		spark.stop();
+		spark.close();
 	}
 }
