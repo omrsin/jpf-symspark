@@ -3,6 +3,7 @@ package org.apache.spark.api.java;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 
@@ -36,6 +37,16 @@ public class JavaRDD<T> {
 		} catch (Exception e) {
 			e.printStackTrace();
 		} return new JavaRDD<R>(list_r);
+	}
+	
+	public <U> JavaRDD<U> flatMap(FlatMapFunction<T,U> f) {
+		List<U> list_u = new ArrayList<U>();
+		try {
+			list_u.add(f.call(list_t.get(0)).next());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return new JavaRDD<U>(list_u);
 	}
 	
 	public T reduce(Function2<T, T, T> f) {		
