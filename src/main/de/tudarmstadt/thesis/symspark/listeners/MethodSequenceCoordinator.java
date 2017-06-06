@@ -108,7 +108,7 @@ public class MethodSequenceCoordinator {
 		} else if (inputExpression instanceof StringSymbolic) {
 			StringSymbolic symString = ((StringSymbolic) inputExpression);
 			
-			return symString.solution;
+			return "\""+symString.solution+"\"";
 		}
 		return null;
 	}

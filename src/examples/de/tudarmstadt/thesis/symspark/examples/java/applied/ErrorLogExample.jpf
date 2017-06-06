@@ -1,0 +1,12 @@
+@using=jpf-symspark
+
+jpf-spark.package_path=de.tudarmstadt.thesis.symspark.examples.java.applied
+
+target=${jpf-spark.package_path}.ErrorLogExample
+
+symbolic.dp=choco
+symbolic.string_dp=automata
+
+listener = de.tudarmstadt.thesis.symspark.listeners.PathConditionListener
+
+spark.methods=filter;map
