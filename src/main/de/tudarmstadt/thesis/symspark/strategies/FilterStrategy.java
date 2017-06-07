@@ -1,18 +1,21 @@
-package de.tudarmstadt.thesis.symspark.listeners;
+package de.tudarmstadt.thesis.symspark.strategies;
 
 import java.util.Optional;
 
+import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
+import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
 import gov.nasa.jpf.symbc.bytecode.INVOKESTATIC;
 import gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL;
 import gov.nasa.jpf.symbc.numeric.Expression;
+import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
 
-public class MapStrategy extends AbstractMethodStrategy implements MethodStrategy {
+public class FilterStrategy extends AbstractMethodStrategy {
 
-	public MapStrategy(Optional<MethodStrategy> optional) {
+	public FilterStrategy(Optional<MethodStrategy> optional) {		
 		optional.ifPresent(methodStrategy -> {
 			this.expression = methodStrategy.getExpression();			
 		});
@@ -25,20 +28,26 @@ public class MapStrategy extends AbstractMethodStrategy implements MethodStrateg
 			if(expression == null) {
 				expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(1);
 			}
-			currentThread.getModifiableTopFrame().setLocalAttr(1, expression);
+			currentThread.getModifiableTopFrame().setLocalAttr(1, expression);			
 		} else if(ins instanceof INVOKESTATIC && ((INVOKESTATIC)ins).getInvokedMethodName().contains("lambda")) {
 			if(expression == null) {
 				expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(0);
 			}
 			currentThread.getModifiableTopFrame().setLocalAttr(0, expression);
-		}				
-	}	
-	
+		}
+	}
 
 	@Override
 	public void postProcessing(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
-		if(exitedMethod.getName().contains("call")) {			
-			expression = (Expression) currentThread.getModifiableTopFrame().getSlotAttr(2);
+		SparkMethod sparkMethod = SparkMethod.getSparkMethod(exitedMethod.getName());
+		if(sparkMethod == SparkMethod.FILTER) {
+			Optional<PCChoiceGenerator> option = PCChoiceGeneratorUtils.getPCChoiceGenerator(vm.getChoiceGenerator()); 
+			option.ifPresent(cg -> {
+				if(cg.getNextChoice() == 1) {
+					currentThread.breakTransition(true);
+					endStateForced = true;
+				}				
+			});		
 		}
 	}
 }

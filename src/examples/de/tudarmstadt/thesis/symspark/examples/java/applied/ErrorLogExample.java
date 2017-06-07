@@ -40,8 +40,8 @@ public class ErrorLogExample {
 	
 	public static void main(String[] args) {
 		System.out.println("Spark Java Error Log Test");
-//		System.out.println("Expected analysis result [-1000000, 3, 6, 7]");
-//		System.out.println("Expected execution result [9, 9, 12]");
+		System.out.println("Expected analysis result [\"ERR  \", \" \", \"ERR server\", \"WAR\", \"ERR database\", \"ERR application\"]");
+		System.out.println("Expected execution result [1, 2, 1]");
 		
 		SparkConf conf = new SparkConf()
 				.setAppName("JavaErrorLog")

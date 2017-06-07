@@ -47,8 +47,7 @@ public class PathConditionListener extends PropertyListenerAdapter implements Pu
 	
 	@Override
 	public void stateAdvanced(Search search) {
-		if (search.isEndState()) {
-			System.out.println("End state reached");
+		if (search.isEndState()) {			
 			coordinator.setEndStateReached(true);
 		}
 	}

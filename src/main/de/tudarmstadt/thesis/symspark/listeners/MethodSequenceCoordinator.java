@@ -7,6 +7,9 @@ import java.util.Set;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidator;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidatorFactory;
+import de.tudarmstadt.thesis.symspark.strategies.FilterStrategy;
+import de.tudarmstadt.thesis.symspark.strategies.MapStrategy;
+import de.tudarmstadt.thesis.symspark.strategies.MethodStrategy;
 import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.numeric.Expression;
@@ -44,8 +47,7 @@ public class MethodSequenceCoordinator {
 	public void detectSparkInstruction(ThreadInfo currentThread, Instruction instruction) {
 		if(validator.isSparkMethod(instruction)) {			
 			setMethodStrategy(instruction);
-		} else if(validator.isInternalMethod(instruction)){
-			//TODO: This gets triggered even if the instruction was not selected in the properties (e.g. no map)
+		} else if(validator.isInternalMethod(instruction, currentThread)){
 			methodStrategy.preProcessing(currentThread, instruction);
 			if(inputExpression == null) {
 				inputExpression = methodStrategy.getExpression();

@@ -1,4 +1,4 @@
-package de.tudarmstadt.thesis.symspark.listeners;
+package de.tudarmstadt.thesis.symspark.strategies;
 
 import gov.nasa.jpf.symbc.numeric.Expression;
 

@@ -11,6 +11,8 @@ import gov.nasa.jpf.jvm.bytecode.INVOKEDYNAMIC;
 import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
 import gov.nasa.jpf.symbc.bytecode.INVOKESTATIC;
 import gov.nasa.jpf.vm.Instruction;
+import gov.nasa.jpf.vm.StackFrame;
+import gov.nasa.jpf.vm.ThreadInfo;
 
 /**
  * Validator for the Java implementation of the Spark framework.
@@ -51,14 +53,15 @@ public class JavaSparkValidator implements SparkValidator {
 	}	
 		
 	@Override
-	public boolean isInternalMethod(Instruction instruction) {
-		if(instruction instanceof gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL || instruction instanceof INVOKESTATIC) {
+	public boolean isInternalMethod(Instruction instruction, ThreadInfo currentThread) {		
+		if((instruction instanceof gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL || instruction instanceof INVOKESTATIC) &&
+			isInvokedBySpark(currentThread)) {			
 			String clsName = ((JVMInvokeInstruction)instruction).getInvokedMethodClassName();
 			String methodName = ((JVMInvokeInstruction)instruction).getInvokedMethodName();
 			return isInternalMethod(clsName, methodName);			
 		}
 		return false;
-	}
+	}	
 
 	@Override
 	public boolean isInternalMethod(String clsName, String methodName) {		
@@ -118,5 +121,13 @@ public class JavaSparkValidator implements SparkValidator {
 			return true;
 		}
 		return false;
+	}
+	
+	private boolean isInvokedBySpark(ThreadInfo currentThread) {
+		StackFrame sf = currentThread.getCallerStackFrame();
+		if(sf != null && sf.getPrevious() != null && sf.getPrevious().getPrevious() != null) {
+			return isSparkMethod(sf.getPrevious().getPrevious().getPC());
+		}
+		return false;		 
 	}
 }
