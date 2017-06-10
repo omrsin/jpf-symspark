@@ -10,8 +10,10 @@ public interface MethodStrategy {
 	public void preProcessing(ThreadInfo currentThread, Instruction ins);	
 	public void postProcessing(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod);
 		
-	public Expression getExpression();
-	public void setExpression(Expression expression);
-	public boolean isEndStateForced();
-	public void setEndStateForced(boolean endStateForced);	
+	public Expression getInputExpression();
+	public void setInputExpression(Expression expression);
+	public boolean isEndStateForced();	
+	public boolean hasMultipleOutputExpressions();
+	public Expression getSingleOutputExpression();
+	public void setSingleOutputExpression(Expression expression);
 }

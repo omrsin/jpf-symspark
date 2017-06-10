@@ -11,34 +11,25 @@ import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
 
 public class MapStrategy extends AbstractMethodStrategy implements MethodStrategy {
+	
+	private boolean hasReturnedValue = false;
 
 	public MapStrategy(Optional<MethodStrategy> optional) {
 		optional.ifPresent(methodStrategy -> {
-			this.expression = methodStrategy.getExpression();			
+			this.inputExpression = methodStrategy.getSingleOutputExpression();
+//			this.inputExpression = methodStrategy.getInputExpression();			
 		});
-	}
-
-	@Override
-	public void preProcessing(ThreadInfo currentThread, Instruction ins) {
-		//TODO: This validation could and should be done by the validator
-		if(ins instanceof INVOKEVIRTUAL && ((INVOKEVIRTUAL)ins).getInvokedMethodName().contains("call")) {
-			if(expression == null) {
-				expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(1);
-			}
-			currentThread.getModifiableTopFrame().setLocalAttr(1, expression);
-		} else if(ins instanceof INVOKESTATIC && ((INVOKESTATIC)ins).getInvokedMethodName().contains("lambda")) {
-			if(expression == null) {
-				expression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(0);
-			}
-			currentThread.getModifiableTopFrame().setLocalAttr(0, expression);
-		}				
 	}	
-	
 
 	@Override
 	public void postProcessing(VM vm, ThreadInfo currentThread, MethodInfo exitedMethod) {
-		if(exitedMethod.getName().contains("call")) {			
-			expression = (Expression) currentThread.getModifiableTopFrame().getSlotAttr(2);
-		}
+		if(exitedMethod.getName().contains("call")) {
+			if(currentThread.getCallerStackFrame().getPC() instanceof INVOKEVIRTUAL || 
+			   exitedMethod.getClassName().contains("$$Lambda")) {				
+				outputExpressions.add((Expression) currentThread.getModifiableTopFrame().getSlotAttr(2));
+	//						hasReturnedValue = true;
+	//						inputExpression = (Expression) currentThread.getModifiableTopFrame().getSlotAttr(2);
+			}
+		}		
 	}
 }

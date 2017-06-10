@@ -106,12 +106,17 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 
 		private int getNumberOfArguments() {
 			int numberOfArguments = 0;
-			SparkMethod sparkMethod = SparkMethod.getSparkMethod(getInvokedMethod().getName());				
-			if(sparkMethod == SparkMethod.FILTER || sparkMethod == SparkMethod.MAP) {
+			SparkMethod sparkMethod = SparkMethod.getSparkMethod(getInvokedMethod().getName());
+			switch (sparkMethod) {
+			case FILTER:
+			case MAP:
+			case FLATMAP:
 				numberOfArguments = 1;
-			} else if(sparkMethod == SparkMethod.REDUCE) {
+				break;
+			case REDUCE:
 				numberOfArguments = 2;
-			}		
+				break;		
+			}
 			return numberOfArguments;
 		}
 		

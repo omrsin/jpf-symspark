@@ -1,6 +1,7 @@
 package org.apache.spark.api.java;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.spark.api.java.function.FlatMapFunction;
@@ -42,7 +43,10 @@ public class JavaRDD<T> {
 	public <U> JavaRDD<U> flatMap(FlatMapFunction<T,U> f) {
 		List<U> list_u = new ArrayList<U>();
 		try {
-			list_u.add(f.call(list_t.get(0)).next());
+			Iterator<U> it = f.call(list_t.get(0));
+			while(it.hasNext()) {
+				list_u.add(it.next());
+			}						
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

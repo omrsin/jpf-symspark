@@ -33,6 +33,7 @@ public class JavaSparkValidator implements SparkValidator {
 				.map(e -> e.name().toLowerCase())
 				.collect(Collectors.toList());
 		String[] validSelectedMethods = Arrays.asList(conf.getStringArray(SPARK_METHODS)).stream().parallel()
+				.map(String::toLowerCase)
 				.filter(allSparkMethods::contains)
 				.toArray(String[]::new);				
 		
@@ -65,8 +66,9 @@ public class JavaSparkValidator implements SparkValidator {
 
 	@Override
 	public boolean isInternalMethod(String clsName, String methodName) {		
-		if(methodName != null) {			
-			return methodName.contains(INTERNAL_METHOD) || methodName.contains(INTERNAL_LAMBDA_METHOD);			
+		if(methodName != null) {
+			String method = methodName.toLowerCase(); 
+			return method.contains(INTERNAL_METHOD) || method.contains(INTERNAL_LAMBDA_METHOD);			
 		} else {
 			return false;
 		}
@@ -83,7 +85,7 @@ public class JavaSparkValidator implements SparkValidator {
 	@Override
 	public Optional<String> getSparkMethod(String clsName, String methodName) {
 		if(isSparkMethod(clsName, methodName)) {
-			return Arrays.stream(sparkMethods).parallel().filter(methodName::contains).findFirst();
+			return Arrays.stream(sparkMethods).parallel().filter(methodName.toLowerCase()::contains).findFirst();
 		}
 		return Optional.empty();
 	}
@@ -96,7 +98,7 @@ public class JavaSparkValidator implements SparkValidator {
 	
 	private boolean validateSparkMethod(String methodName) {
 		if(sparkMethods != null) {
-			return Arrays.stream(sparkMethods).parallel().anyMatch(methodName::contains);
+			return Arrays.stream(sparkMethods).parallel().anyMatch(methodName.toLowerCase()::contains);
 		} else {
 			return false;
 		}

@@ -11,6 +11,7 @@ import gov.nasa.jpf.report.ConsolePublisher;
 import gov.nasa.jpf.report.Publisher;
 import gov.nasa.jpf.report.PublisherExtension;
 import gov.nasa.jpf.search.Search;
+import gov.nasa.jpf.symbc.bytecode.INVOKESPECIAL;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.ThreadInfo;
@@ -31,7 +32,7 @@ public class PathConditionListener extends PropertyListenerAdapter implements Pu
 	}
 
 	@Override
-	public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction, Instruction executedInstruction) {
+	public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction, Instruction executedInstruction) {		
 		coordinator.detectSparkInstruction(currentThread, executedInstruction);			
 	}
 	
