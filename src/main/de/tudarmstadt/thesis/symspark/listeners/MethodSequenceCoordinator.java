@@ -19,7 +19,6 @@ import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
-import gov.nasa.jpf.vm.choice.IntIntervalGenerator;
 
 public class MethodSequenceCoordinator {
 	

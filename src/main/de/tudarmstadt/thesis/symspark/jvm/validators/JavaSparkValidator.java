@@ -22,7 +22,7 @@ import gov.nasa.jpf.vm.ThreadInfo;
 public class JavaSparkValidator implements SparkValidator {
 
 	private static final String CLASS_NAME = "JavaRDD";
-	private static final String FULL_CLASS_NAME = "org.apache.spark.api.java.JavaRDD";
+//	private static final String FULL_CLASS_NAME = "org.apache.spark.api.java.JavaRDD";
 	private static final String INTERNAL_METHOD = "call";
 	private static final String INTERNAL_LAMBDA_METHOD = "lambda$";
 	

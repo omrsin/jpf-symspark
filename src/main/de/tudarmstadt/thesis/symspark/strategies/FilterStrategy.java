@@ -4,11 +4,7 @@ import java.util.Optional;
 
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
 import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
-import gov.nasa.jpf.symbc.bytecode.INVOKESTATIC;
-import gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL;
-import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
-import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
@@ -18,7 +14,6 @@ public class FilterStrategy extends AbstractMethodStrategy {
 	public FilterStrategy(Optional<MethodStrategy> optional) {		
 		optional.ifPresent(methodStrategy -> {
 			this.inputExpression = methodStrategy.getSingleOutputExpression();			
-//			this.inputExpression = methodStrategy.getInputExpression();			
 		});
 	}
 

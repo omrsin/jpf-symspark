@@ -22,7 +22,6 @@ public class ErrorLogExample {
 	
 	private static final String ERROR = "ERR";
 	private static final String WARNING = "WAR";
-	private static final String SEPARATOR = " ";
 	private static final String DATABASE = "database";
 	private static final String SERVER = "server";
 	private static final String APPLICATION = "application";

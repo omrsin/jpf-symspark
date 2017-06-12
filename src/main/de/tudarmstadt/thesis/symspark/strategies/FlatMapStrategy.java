@@ -5,29 +5,19 @@ import java.util.List;
 import java.util.Optional;
 
 import de.tudarmstadt.thesis.symspark.choice.SparkMultipleOutputChoiceGenerator;
-import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
-import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
-import gov.nasa.jpf.symbc.bytecode.INVOKESTATIC;
-import gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL;
 import gov.nasa.jpf.symbc.numeric.Expression;
-import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
-import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
-import gov.nasa.jpf.vm.choice.IntIntervalGenerator;
 
 public class FlatMapStrategy extends AbstractMethodStrategy {
-	
-//	private List<Expression> outputExpressions;
+
 	private boolean exitedCall;
 
 	public FlatMapStrategy(Optional<MethodStrategy> optional) {
-//		this.outputExpressions = new ArrayList<Expression>();
 		this.exitedCall = false;
 		optional.ifPresent(methodStrategy -> {
-			this.inputExpression = methodStrategy.getSingleOutputExpression();
-//			this.inputExpression = methodStrategy.getInputExpression();		
+			this.inputExpression = methodStrategy.getSingleOutputExpression();		
 		});
 	}	
 
