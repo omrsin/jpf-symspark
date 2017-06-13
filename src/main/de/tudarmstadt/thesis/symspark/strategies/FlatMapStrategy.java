@@ -35,7 +35,7 @@ public class FlatMapStrategy extends AbstractMethodStrategy {
 				// Adds a null value in the end because for some reason the last option was not explored correctly. This creates an extra dummy option that enables the correct execution with the last expression				
 				swapList.add(swapList.get(swapList.size()-1));
 				// Register CG to explore all the options
-				SparkMultipleOutputChoiceGenerator cg = new SparkMultipleOutputChoiceGenerator("TestFlatMap", swapList);				
+				SparkMultipleOutputChoiceGenerator cg = new SparkMultipleOutputChoiceGenerator("FlatMapCG", swapList);
 				vm.getSystemState().setNextChoiceGenerator(cg);
 			}
 		}

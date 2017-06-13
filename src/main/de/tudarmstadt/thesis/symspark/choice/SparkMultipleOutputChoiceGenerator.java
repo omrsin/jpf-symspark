@@ -6,7 +6,7 @@ import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.vm.choice.IntIntervalGenerator;
 
 /**
- * This choice generator aims to keep track of those spark actions that
+ * This choice generator aims to keep track of those spark transformations that
  * produce multiple output (for example, flatMap). These output expressions
  * are registered in a choice generator at the moment the action is done.
  * It uses an integer interval representing representing the elements in 

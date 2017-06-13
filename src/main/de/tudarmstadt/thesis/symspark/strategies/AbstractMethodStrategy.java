@@ -20,15 +20,9 @@ public abstract class AbstractMethodStrategy implements MethodStrategy {
 	public void preProcessing(ThreadInfo currentThread, Instruction ins) {
 		//TODO: This validation could and should be done by the validator
 		if(ins instanceof INVOKEVIRTUAL && ((INVOKEVIRTUAL)ins).getInvokedMethodName().contains("call")) {
-			if(inputExpression == null) {
-				inputExpression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(1);
-			}
-			currentThread.getModifiableTopFrame().setLocalAttr(1, inputExpression);
+			prepare(currentThread, 1);
 		} else if(ins instanceof INVOKESTATIC && ((INVOKESTATIC)ins).getInvokedMethodName().contains("lambda")) {
-			if(inputExpression == null) {
-				inputExpression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(0);
-			}
-			currentThread.getModifiableTopFrame().setLocalAttr(0, inputExpression);
+			prepare(currentThread, 0);
 		}
 	}
 
@@ -65,5 +59,12 @@ public abstract class AbstractMethodStrategy implements MethodStrategy {
 	 */
 	public void setSingleOutputExpression(Expression expression) {
 		outputExpressions = Arrays.asList(expression); 	
+	}
+	
+	private void prepare(ThreadInfo currentThread, int index) {
+		if(inputExpression == null) {
+			inputExpression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(index);
+		}
+		currentThread.getModifiableTopFrame().setLocalAttr(index, inputExpression);
 	}
 }

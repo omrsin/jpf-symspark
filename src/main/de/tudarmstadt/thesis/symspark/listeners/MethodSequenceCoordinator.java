@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import de.tudarmstadt.thesis.symspark.choice.SparkIterativeChoiceGenerator;
 import de.tudarmstadt.thesis.symspark.choice.SparkMultipleOutputChoiceGenerator;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidator;
@@ -45,7 +46,7 @@ public class MethodSequenceCoordinator {
 	 */
 	public void detectSparkInstruction(ThreadInfo currentThread, Instruction instruction) {
 		if(validator.isSparkMethod(instruction)) {			
-			setMethodStrategy(instruction);
+			setMethodStrategy(instruction, currentThread);
 		} else if(validator.isInternalMethod(instruction, currentThread)){
 			methodStrategy.preProcessing(currentThread, instruction);
 			if(inputExpression == null) {
@@ -60,7 +61,7 @@ public class MethodSequenceCoordinator {
 			Optional<PCChoiceGenerator> option = PCChoiceGeneratorUtils.getPCChoiceGenerator(vm.getChoiceGenerator());
 			option.ifPresent(pccg -> {
 				// This is done to restore the right method strategy.
-				setMethodStrategy(pccg.getThreadInfo().getCallerStackFrame().getPrevious().getPrevious().getPC());
+				setMethodStrategy(pccg.getThreadInfo().getCallerStackFrame().getPrevious().getPrevious().getPC(), pccg.getThreadInfo());
 				if(endStateReached) {
 					if(pccg.getCurrentPC().solve()) {
 						values.add(getSolution());
@@ -74,6 +75,8 @@ public class MethodSequenceCoordinator {
 		} else if(vm.getChoiceGenerator() instanceof SparkMultipleOutputChoiceGenerator) {
 			SparkMultipleOutputChoiceGenerator cg = (SparkMultipleOutputChoiceGenerator) vm.getChoiceGenerator();
 			methodStrategy.setSingleOutputExpression(cg.getNextExpression());			
+		} else if(vm.getChoiceGenerator() instanceof SparkIterativeChoiceGenerator) {
+			// Here we should check if it is done and add all the values to the result;
 		}
 	}	
 
@@ -101,11 +104,11 @@ public class MethodSequenceCoordinator {
 	 * 
 	 * @param instruction The JVM instruction that invokes the Spark method.
 	 */
-	private void setMethodStrategy(Instruction instruction) {
+	private void setMethodStrategy(Instruction instruction, ThreadInfo currentThread) {		
 		Optional<String> option = validator.getSparkMethod(instruction); 
 		option.map(SparkMethod::getSparkMethod)
 			.ifPresent(sparkMethod -> {
-				methodStrategy = MethodStrategyFactory.switchMethodStrategy(sparkMethod, methodStrategy);
+				methodStrategy = MethodStrategyFactory.switchMethodStrategy(sparkMethod, methodStrategy, currentThread);
 			});		
 	}
 	
