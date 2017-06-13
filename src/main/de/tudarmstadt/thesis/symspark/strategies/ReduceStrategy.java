@@ -25,12 +25,12 @@ public class ReduceStrategy extends AbstractMethodStrategy implements MethodStra
 			if(inputExpression == null) {
 				inputExpression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(2);
 			}
-			currentThread.getModifiableTopFrame().setLocalAttr(1, inputExpression);
+			currentThread.getModifiableTopFrame().setLocalAttr(2, inputExpression);
 		} else if(ins instanceof INVOKESTATIC && ((INVOKESTATIC)ins).getInvokedMethodName().contains("lambda")) {
 			if(inputExpression == null) {
 				inputExpression = (Expression) currentThread.getModifiableTopFrame().getLocalAttr(1);
 			}
-			currentThread.getModifiableTopFrame().setLocalAttr(0, inputExpression);
+			currentThread.getModifiableTopFrame().setLocalAttr(1, inputExpression);
 		}
 	}
 
