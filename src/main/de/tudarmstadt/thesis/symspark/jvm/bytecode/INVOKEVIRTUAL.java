@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
+import de.tudarmstadt.thesis.symspark.util.SparkMethodBuilder;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.JPF;
 import gov.nasa.jpf.vm.ElementInfo;
@@ -49,7 +49,9 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 	}
 
 	private String buildMethodToAnalyze(ThreadInfo th) {
-		return new SparkMethodBuilder().build(th);
+		ElementInfo ei = (ElementInfo)getArgumentValues(th)[0];
+		MethodInfo mi = getInvokedMethod();
+		return new SparkMethodBuilder().build(th, ei, mi);
 	}	
 
 	private String join(List<String> list, String separator) {
@@ -58,78 +60,5 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 			builder.append(element+separator);
 		}
 		return builder.toString();
-	}	
-	
-	//XXX: Move the responsibility to another method. Maybe extract the internal class SparkMethodBuilder to an external class
-	private class SparkMethodBuilder {
-				
-		private final String ARGUMENT_NAME = "sym";
-		private final String LAMBDA_CLASS = "$$Lambda";
-		
-		private String className;
-		private String methodName;
-		private int numberOfArguments;
-		
-		public SparkMethodBuilder setClassName(String className) {						
-			if(className.contains(LAMBDA_CLASS)) {
-				LOGGER.log(Level.FINER, CLASS + "Invoked from a Lambda class: "+className);
-				String[] splitClassName = className.split("\\$");
-				String classPath = splitClassName[0];
-				String methodNumber = splitClassName[splitClassName.length-1];
-				this.className = classPath;
-				this.methodName = "lambda$"+methodNumber;
-			} else {
-				LOGGER.log(Level.FINER, CLASS + "Invoked from an anonymous class: "+className);
-				this.className = className;
-				this.methodName = "call";
-			}			
-			return this;
-		}
-		
-		public SparkMethodBuilder setNumberOfArguments(int numberOfArguments) {
-			this.numberOfArguments = numberOfArguments;
-			return this;
-		}
-		
-		public String build() {			
-			return className+"."+methodName+"("+produceSymbolicArguments()+")";
-		}
-		
-		public String build(ThreadInfo th) {
-			String className = ((ElementInfo)getArgumentValues(th)[0]).getClassInfo().getName();
-			int numberOfArguments = getNumberOfArguments();
-			
-			return this.setClassName(className)
-					   .setNumberOfArguments(numberOfArguments)
-					   .build();
-		}	
-
-		private int getNumberOfArguments() {
-			int numberOfArguments = 0;
-			SparkMethod sparkMethod = SparkMethod.getSparkMethod(getInvokedMethod().getName());
-			switch (sparkMethod) {
-			case FILTER:
-			case MAP:
-			case FLATMAP:
-				numberOfArguments = 1;
-				break;
-			case REDUCE:
-				numberOfArguments = 2;
-				break;		
-			}
-			return numberOfArguments;
-		}
-		
-		private String produceSymbolicArguments() {
-			String arguments = "";
-			String delimiter = "#";
-			for(int i = 0; i < numberOfArguments; i++) {
-				if(i == numberOfArguments - 1) {
-					delimiter = "";
-				}
-				arguments += ARGUMENT_NAME+delimiter;								
-			}
-			return arguments;
-		}
 	}
 }

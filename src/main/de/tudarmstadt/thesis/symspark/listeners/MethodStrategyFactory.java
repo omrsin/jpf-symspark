@@ -7,6 +7,7 @@ import de.tudarmstadt.thesis.symspark.strategies.FilterStrategy;
 import de.tudarmstadt.thesis.symspark.strategies.FlatMapStrategy;
 import de.tudarmstadt.thesis.symspark.strategies.MapStrategy;
 import de.tudarmstadt.thesis.symspark.strategies.MethodStrategy;
+import de.tudarmstadt.thesis.symspark.strategies.ReduceStrategy;
 
 /**
   * This class aims to switch among already instantiated strategies
@@ -24,6 +25,8 @@ public class MethodStrategyFactory {
 			return new MapStrategy(Optional.ofNullable(methodStrategy));
 		case FLATMAP:
 			return new FlatMapStrategy(Optional.ofNullable(methodStrategy));
+		case REDUCE:
+			return new ReduceStrategy(Optional.ofNullable(methodStrategy));
 		default:
 			throw new IllegalArgumentException("Invalid SparkMethod. No suitable strategy found");				
 		}

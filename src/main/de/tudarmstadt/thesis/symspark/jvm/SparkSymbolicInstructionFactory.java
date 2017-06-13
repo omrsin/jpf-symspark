@@ -36,16 +36,5 @@ public class SparkSymbolicInstructionFactory extends SymbolicInstructionFactory 
 			return new INVOKEVIRTUAL(clsName, methodName, methodSignature);
 		}		
 		return super.invokevirtual(clsName, methodName, methodSignature);
-	}
-
-	@Override
-	public Instruction invokedynamic(int bootstrapIndex, String samMethodName, String functionType) {
-		// TODO Consider extending to detect lambdas in a better way
-//		boolean a = false;
-//		if(samMethodName.contains("call")) {
-//			a = true;
-//		}
-//		boolean b = a;
-		return super.invokedynamic(bootstrapIndex, samMethodName, functionType);
 	}	
 }

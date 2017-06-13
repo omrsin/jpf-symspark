@@ -11,6 +11,8 @@ public enum SparkMethod {
 			return MAP;
 		case "flatmap":
 			return FLATMAP;
+		case "reduce":
+			return REDUCE;
 		default:
 			return null;
 		}
