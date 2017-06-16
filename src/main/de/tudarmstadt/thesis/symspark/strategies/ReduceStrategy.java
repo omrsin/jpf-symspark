@@ -28,7 +28,6 @@ public class ReduceStrategy extends AbstractMethodStrategy implements MethodStra
 	@Override
 	public void preProcessing(ThreadInfo currentThread, Instruction ins) {		
 		//TODO: This validation could and should be done by the validator
-		//TODO: Refactor this to be done in a single method
 		if(ins instanceof INVOKEVIRTUAL && ((INVOKEVIRTUAL)ins).getInvokedMethodName().contains("call")) {
 			prepare(currentThread, 2);
 		} else if(ins instanceof INVOKESTATIC && ((INVOKESTATIC)ins).getInvokedMethodName().contains("lambda")) {

@@ -1,5 +1,6 @@
 package org.apache.spark.api.java;
 
+import java.util.Arrays;
 import java.util.List;
 import org.apache.spark.SparkConf;
 
@@ -15,5 +16,8 @@ public class JavaSparkContext {
 	public void close() {}
 	public <T> JavaRDD<T> parallelize(List<T> list) {		
 		return new JavaRDD<T>(list);
-	}	
+	}
+	public JavaRDD<String> textFile(String file) {
+		return new JavaRDD<String>(Arrays.asList(""));
+	}
 }
