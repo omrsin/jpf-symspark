@@ -13,7 +13,7 @@ import gov.nasa.jpf.vm.Instruction;
 
 /**
  * Instruction Factory in charge of recognizing instructions relevant
- * to the execution of the Spark framework
+ * to the execution of the Spark framework.
  * @author Omar Erminy (omar.erminy.ugueto@gmail.com)
  *
  */

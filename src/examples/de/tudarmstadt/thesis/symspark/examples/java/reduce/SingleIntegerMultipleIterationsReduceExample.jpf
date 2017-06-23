@@ -6,7 +6,7 @@ target=${jpf-spark.package_path}.SingleIntegerMultipleIterationsReduceExample
 
 symbolic.dp=choco
 
-listener = de.tudarmstadt.thesis.symspark.listeners.PathConditionListener
+listener = de.tudarmstadt.thesis.symspark.listeners.SparkMethodListener
 
 spark.methods=reduce
 spark.reduce.iterations=2

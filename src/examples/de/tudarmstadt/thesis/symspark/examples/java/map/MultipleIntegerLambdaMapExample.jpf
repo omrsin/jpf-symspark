@@ -6,6 +6,6 @@ target=${jpf-spark.package_path}.MultipleIntegerLambdaMapExample
 
 symbolic.dp=choco
 
-listener = de.tudarmstadt.thesis.symspark.listeners.PathConditionListener
+listener = de.tudarmstadt.thesis.symspark.listeners.SparkMethodListener
 
 spark.methods=map

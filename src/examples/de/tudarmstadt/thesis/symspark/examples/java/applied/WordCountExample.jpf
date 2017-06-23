@@ -8,6 +8,6 @@ target.args=input,output
 symbolic.dp=choco
 symbolic.string_dp=automata
 
-listener = de.tudarmstadt.thesis.symspark.listeners.PathConditionListener
+listener = de.tudarmstadt.thesis.symspark.listeners.SparkMethodListener
 
 spark.methods=filter

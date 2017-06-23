@@ -16,14 +16,14 @@ import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
 
-public class PathConditionListener extends PropertyListenerAdapter implements PublisherExtension {
+public class SparkMethodListener extends PropertyListenerAdapter implements PublisherExtension {
 	
-	private static final Logger LOGGER = JPF.getLogger(PathConditionListener.class.getName());
-	private static final String CLASS = PathConditionListener.class.getSimpleName()+": ";	
+	private static final Logger LOGGER = JPF.getLogger(SparkMethodListener.class.getName());
+	private static final String CLASS = SparkMethodListener.class.getSimpleName()+": ";	
 	
 	private MethodSequenceCoordinator coordinator;
 	
-	public PathConditionListener(Config conf, JPF jpf) {
+	public SparkMethodListener(Config conf, JPF jpf) {
 		LOGGER.log(Level.INFO, CLASS + "Using PathConditionListener");		
 		coordinator = new MethodSequenceCoordinator(conf);		
 		
