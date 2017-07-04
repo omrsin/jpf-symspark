@@ -33,9 +33,9 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 		List<String> methods = new ArrayList<String>();
 		methods.addAll(Arrays.asList(Optional.ofNullable(conf.getStringArray("symbolic.method")).orElse(new String[0])));		
 		
-		String method = buildMethodToAnalyze(th);
-		LOGGER.log(Level.INFO, CLASS + "Method to be analyzed: "+method);
-		methods.add(method);		
+		List<String> methodToAnalyze = buildMethodToAnalyze(th);
+		LOGGER.log(Level.INFO, CLASS + "Method to be analyzed: "+methodToAnalyze);
+		methods.addAll(methodToAnalyze);	
 		conf.setProperty("symbolic.method", join(methods, ";"));		
 
 		return super.execute(th);
@@ -48,7 +48,7 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL {
 		}		
 	}
 
-	private String buildMethodToAnalyze(ThreadInfo th) {
+	private List<String> buildMethodToAnalyze(ThreadInfo th) {
 		ElementInfo ei = (ElementInfo)getArgumentValues(th)[0];
 		MethodInfo mi = getInvokedMethod();
 		return new SparkMethodBuilder().build(th, ei, mi);

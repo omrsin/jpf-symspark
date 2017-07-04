@@ -1,7 +1,10 @@
 package de.tudarmstadt.thesis.symspark.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
 import gov.nasa.jpf.Config;
@@ -20,22 +23,24 @@ public class SparkMethodBuilder {
 	private static final String LAMBDA_CLASS = "$$Lambda";
 	
 	private String className;
-	private String methodName;
+	private List<String> methodNames;
 	private SparkMethod sparkMethod;
 	private boolean hasIterativeAction = false;
 	
-	public SparkMethodBuilder setClassName(String className) {						
+	public SparkMethodBuilder setClassName(String className) {
+		methodNames = new ArrayList<String>();
 		if(className.contains(LAMBDA_CLASS)) {
 			LOGGER.log(Level.FINER, CLASS + "Invoked from a Lambda class: "+className);
 			String[] splitClassName = className.split("\\$");
 			String classPath = splitClassName[0];
 			String methodNumber = splitClassName[splitClassName.length-1];
-			this.className = classPath;
-			this.methodName = "lambda$"+methodNumber;
+			this.className = classPath;			
+			this.methodNames.add("lambda$"+methodNumber);
+			this.methodNames.add("lambda$main$"+methodNumber);
 		} else {
 			LOGGER.log(Level.FINER, CLASS + "Invoked from an anonymous class: "+className);
 			this.className = className;
-			this.methodName = "call";
+			this.methodNames.add("call");
 		}			
 		return this;
 	}
@@ -53,11 +58,14 @@ public class SparkMethodBuilder {
 		return this;
 	}
 	
-	public String build() {			
-		return className+"."+methodName+"("+produceSymbolicArguments()+")";
+	public List<String> build() {
+		return methodNames.stream()
+		.map(methodName -> className+"."+methodName+"("+produceSymbolicArguments()+")")
+		.collect(Collectors.toList());		
+//		return className+"."+methodNames+"("+produceSymbolicArguments()+")";
 	}
 	
-	public String build(ThreadInfo th, ElementInfo ei, MethodInfo mi) {		
+	public List<String> build(ThreadInfo th, ElementInfo ei, MethodInfo mi) {		
 		String className = ei.getClassInfo().getName();		
 		
 		return this.setClassName(className)
