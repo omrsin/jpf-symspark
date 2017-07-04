@@ -24,7 +24,7 @@ public class SparkMethodListener extends PropertyListenerAdapter implements Publ
 	private MethodSequenceCoordinator coordinator;
 	
 	public SparkMethodListener(Config conf, JPF jpf) {
-		LOGGER.log(Level.INFO, CLASS + "Using PathConditionListener");		
+		LOGGER.log(Level.INFO, CLASS + "Using SparkMethodListener");		
 		coordinator = new MethodSequenceCoordinator(conf);		
 		
 		jpf.addPublisherExtension(ConsolePublisher.class, this);
