@@ -163,6 +163,7 @@
       <classpath>
         <path refid="lib.path"/>
         <pathelement location="build/annotations"/>
+      	<pathelement location="build/classes"/>
       </classpath>
     </javac>             
   </target>
