@@ -44,6 +44,7 @@ RUN hg clone http://babelfish.arc.nasa.gov/hg/jpf/jpf-core \
 
 # create site.properties 
 RUN mkdir /root/.jpf \
+ && echo "alias jpf='java -jar /jpf-symspark-project/jpf-core/build/RunJPF.jar'"  >> /root/.bashrc \
  && echo "jpf-core = ${JPF_HOME}/jpf-core" >> /root/.jpf/site.properties \
  && echo "jpf-symbc = ${JPF_HOME}/jpf-symbc" >> /root/.jpf/site.properties \
  && echo "jpf-symspark = ${JPF_HOME}/jpf-symspark" >> /root/.jpf/site.properties \
