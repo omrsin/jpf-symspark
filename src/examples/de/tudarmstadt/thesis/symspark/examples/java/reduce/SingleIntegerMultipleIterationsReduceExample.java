@@ -19,7 +19,7 @@ import org.apache.spark.api.java.function.Function2;
 public class SingleIntegerMultipleIterationsReduceExample {
 	public static void main(String[] args) {
 		System.out.println("Spark Java Single Integer Reduce Test");
-		System.out.println("Expected analysis result [-1000000, 3]");
+		System.out.println("Expected analysis result [-1000000, 9]");
 		System.out.println("Expected execution result 16");
 		
 		SparkConf conf = new SparkConf()

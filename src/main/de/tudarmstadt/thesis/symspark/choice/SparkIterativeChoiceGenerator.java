@@ -2,9 +2,12 @@ package de.tudarmstadt.thesis.symspark.choice;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 import gov.nasa.jpf.symbc.numeric.Expression;
+import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.vm.ChoiceGeneratorBase;
+import gov.nasa.jpf.vm.choice.IntIntervalGenerator;
 
 /**
  * This choice generator aims to keep track of those spark actions that
@@ -12,99 +15,93 @@ import gov.nasa.jpf.vm.ChoiceGeneratorBase;
  * the whole RDD dataset to produce a single value.
  * The interval of the integer options is not really relevant. It is only
  * used to keep track of how many iterations will be executed.
- * Also, it keeps track of the original single input of the operation
- * (the value that is not accumulated) as the initial symbolic expression
- * and also it keeps track of the accumulated symbolic expression so far.
- * The latter is updated in the post-processing of the iterative action.
+ * Also, it keeps track of the accumulated output that will serve as an input
+ * for the next iteration.
  * @author Omar Erminy (omar.erminy.ugueto@gmail.com)
  *
  */
-public class SparkIterativeChoiceGenerator extends ChoiceGeneratorBase<Expression> {
+public class SparkIterativeChoiceGenerator extends ChoiceGeneratorBase<Integer> {
 
+	private int totalIterations;
+	private int currentIteration;
+	private Stack<StackExpression> outputExpressions = new Stack<StackExpression>();	
 	private Expression inputExpression;
-	private List<Expression> accumulatedExpressions;
-	private int iterations;
-	private int executedIterations;
-	private int currentIndex;
-	private int depthIndex;
-	private boolean hasEntryNode;
-	private boolean isFirstTimeIn;
+	private boolean firstTime =  true;	
 	
-	public SparkIterativeChoiceGenerator(String id, int iterations) {
+	public SparkIterativeChoiceGenerator(String id, int totalIterations) {
 		super(id);
-		this.accumulatedExpressions = new ArrayList<Expression>();
-		this.iterations = iterations;
-		this.executedIterations = 0;
-		this.depthIndex = 0;
-		this.currentIndex = 0;
-		this.depthIndex = 0;
-		this.hasEntryNode = false;
-		this.isFirstTimeIn = true;
-	}
-	
+		this.totalIterations = totalIterations;
+		this.currentIteration = 0;
+	}	
+
 	@Override
-	public Expression getNextChoice() {
-		if(currentIndex < accumulatedExpressions.size()) {
-			return accumulatedExpressions.get(currentIndex);
-		}
-		return null;
-		
+	public Integer getNextChoice() {
+		return currentIteration;
 	}
 
 	@Override
-	public Class<Expression> getChoiceType() {		
-		return Expression.class;
+	public Class<Integer> getChoiceType() {
+		return Integer.class;
 	}
 
 	@Override
-	public boolean hasMoreChoices() {		
-		return iterations != executedIterations;
+	public boolean hasMoreChoices() {
+		return !outputExpressions.isEmpty() || currentIteration + 1 < totalIterations;
 	}
 
 	@Override
-	public void advance() {
-		currentIndex++;
-		if(currentIndex == depthIndex) {
-			executedIterations++;
-			depthIndex = accumulatedExpressions.size();
-		}
-	}
+	public void advance() {}
 
 	@Override
 	public void reset() {}
 
 	@Override
-	public int getTotalNumberOfChoices() {		
-		return accumulatedExpressions.size();
+	public int getTotalNumberOfChoices() {
+		return 0;
 	}
 
 	@Override
-	public int getProcessedNumberOfChoices() {		
-		return currentIndex;
+	public int getProcessedNumberOfChoices() {
+		return 0;
+	}
+	
+	public void setInputExpression(Expression inputExpression) {
+		this.inputExpression = inputExpression;
 	}
 	
 	public Expression getInputExpression() {
 		return inputExpression;
 	}
 	
-	public void setInputExpression(Expression expression) {
-		this.inputExpression = expression;
+	public void setOutputExpression(Expression outputExpression) {
+		if(currentIteration + 1 < totalIterations) {
+			outputExpressions.push(new StackExpression(outputExpression, currentIteration+1));
+		}
+		firstTime = false;
 	}
 	
-	public void addAccumulatedExpression(Expression expression) {		
-		accumulatedExpressions.add(expression);
-		if(isFirstTimeIn) {
-			depthIndex++;
-		}		
+	public Expression getOutputExpression(){
+		StackExpression stackExp = outputExpressions.pop();
+		currentIteration = stackExp.iteration;
+		return stackExp.expression;
 	}
 	
-	public boolean hasEntryNode() {
-		return hasEntryNode;
+	public boolean isFirstTime() {
+		return firstTime;
 	}
 	
-	public void addEntryNode(Expression expression) {
-		this.inputExpression = expression;
-		addAccumulatedExpression(expression);
-		hasEntryNode = true;
+	private class StackExpression {
+		public Expression expression;
+		public int iteration;
+		
+		public StackExpression(Expression expression, int iteration) {
+			this.expression = expression;
+			this.iteration = iteration;					
+		}
+		
+		@Override
+		public String toString() {			
+			return "{iteration: "+iteration+", expression: "+expression+"}";
+		}
 	}
 }
