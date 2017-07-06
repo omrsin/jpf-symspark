@@ -1,6 +1,8 @@
 package de.tudarmstadt.thesis.symspark.listeners;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -10,7 +12,9 @@ import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidator;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidatorFactory;
 import de.tudarmstadt.thesis.symspark.strategies.MethodStrategy;
+import de.tudarmstadt.thesis.symspark.strategies.ReduceStrategy;
 import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
+import de.tudarmstadt.thesis.symspark.visitors.RootExpressionVisitor;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
@@ -25,13 +29,15 @@ public class MethodSequenceCoordinator {
 	
 	private final SparkValidator validator;
 	private MethodStrategy methodStrategy;	
-	private Set<String> values;
+	private Set<String> solutions;
+	private Set<List<String>> iterativeSolutions;
 	private Expression inputExpression;
 	
 	private boolean endStateReached = false;
 	
 	public MethodSequenceCoordinator(Config conf) {
-		values = new HashSet<String>();
+		solutions = new HashSet<String>();
+		iterativeSolutions = new HashSet<List<String>>();
 		validator = SparkValidatorFactory.getValidator(conf);
 		inputExpression = null;
 	}
@@ -64,13 +70,20 @@ public class MethodSequenceCoordinator {
 				setMethodStrategy(pccg.getThreadInfo().getCallerStackFrame().getPrevious().getPrevious().getPC(), pccg.getThreadInfo());
 				if(endStateReached) {
 					if(pccg.getCurrentPC().solve()) {
-						values.add(getSolution());
+						if(methodStrategy instanceof ReduceStrategy && ((ReduceStrategy) methodStrategy).hasMultipleIterations()) {
+							//TODO: Checking the header does not work in all cases
+							RootExpressionVisitor rootVisitor = new RootExpressionVisitor();
+							pccg.getCurrentPC().header.accept(rootVisitor);
+							iterativeSolutions.add(parseSolutions(rootVisitor.getExpressions()));
+						} else {
+							solutions.add(parseSolution(inputExpression));
+						}						
 					} else {					
 						//TODO: Do something if a PathCondition is unsatisfiable
 						System.out.println("Current path condition not satisfiable: "+pccg.getCurrentPC());
 					}
 					endStateReached = false;				
-				}						
+				}				
 			});
 		} else if(vm.getChoiceGenerator() instanceof SparkMultipleOutputChoiceGenerator) {
 			SparkMultipleOutputChoiceGenerator cg = (SparkMultipleOutputChoiceGenerator) vm.getChoiceGenerator();
@@ -87,8 +100,12 @@ public class MethodSequenceCoordinator {
 		}
 	}
 			
-	public Set<String> getValues() {
-		return values;
+	public Set<String> getSolutions() {
+		return solutions;
+	}
+	
+	public Set<List<String>> getIterativeSolutions() {
+		return iterativeSolutions;
 	}
 	
 	public void setEndStateReached(boolean endStateReached){
@@ -112,13 +129,21 @@ public class MethodSequenceCoordinator {
 			});		
 	}
 	
-	private String getSolution() {
-		if(inputExpression instanceof SymbolicInteger) {
-			return String.valueOf(((SymbolicInteger) inputExpression).solution);
-		} else if (inputExpression instanceof StringSymbolic) {
-			StringSymbolic symString = ((StringSymbolic) inputExpression);			
+	private String parseSolution(Expression expression) {
+		if(expression instanceof SymbolicInteger) {
+			return String.valueOf(((SymbolicInteger) expression).solution);
+		} else if (expression instanceof StringSymbolic) {
+			StringSymbolic symString = ((StringSymbolic) expression);			
 			return "\""+symString.solution+"\"";
 		}
 		return null;
 	}
+	
+	private List<String> parseSolutions(Set<Expression> expressions) {
+		List<String> solutions = new ArrayList<String>();
+		for(Expression expression : expressions) {
+			solutions.add(parseSolution(expression));
+		}
+		return solutions;
+	}	
 }

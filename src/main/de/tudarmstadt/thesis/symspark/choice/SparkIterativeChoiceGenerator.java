@@ -1,13 +1,11 @@
 package de.tudarmstadt.thesis.symspark.choice;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Stack;
 
+import gov.nasa.jpf.symbc.numeric.Constraint;
 import gov.nasa.jpf.symbc.numeric.Expression;
-import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
+import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.vm.ChoiceGeneratorBase;
-import gov.nasa.jpf.vm.choice.IntIntervalGenerator;
 
 /**
  * This choice generator aims to keep track of those spark actions that
@@ -26,12 +24,16 @@ public class SparkIterativeChoiceGenerator extends ChoiceGeneratorBase<Integer> 
 	private int currentIteration;
 	private Stack<StackExpression> outputExpressions = new Stack<StackExpression>();	
 	private Expression inputExpression;
-	private boolean firstTime =  true;	
+	private boolean firstTime =  true;
+	private Constraint initialConstraint;
+	private PathCondition activePathCondition;
 	
-	public SparkIterativeChoiceGenerator(String id, int totalIterations) {
+	public SparkIterativeChoiceGenerator(String id, int totalIterations, Constraint initialConstraint) {
 		super(id);
 		this.totalIterations = totalIterations;
 		this.currentIteration = 0;
+		this.initialConstraint = initialConstraint;
+		this.activePathCondition = null;
 	}	
 
 	@Override
@@ -73,9 +75,9 @@ public class SparkIterativeChoiceGenerator extends ChoiceGeneratorBase<Integer> 
 		return inputExpression;
 	}
 	
-	public void setOutputExpression(Expression outputExpression) {
+	public void setOutputExpression(Expression outputExpression, PathCondition pathCondition) {
 		if(currentIteration + 1 < totalIterations) {
-			outputExpressions.push(new StackExpression(outputExpression, currentIteration+1));
+			outputExpressions.push(new StackExpression(outputExpression, currentIteration+1, pathCondition));
 		}
 		firstTime = false;
 	}
@@ -83,6 +85,7 @@ public class SparkIterativeChoiceGenerator extends ChoiceGeneratorBase<Integer> 
 	public Expression getOutputExpression(){
 		StackExpression stackExp = outputExpressions.pop();
 		currentIteration = stackExp.iteration;
+		activePathCondition = stackExp.pathCondition;
 		return stackExp.expression;
 	}
 	
@@ -90,18 +93,32 @@ public class SparkIterativeChoiceGenerator extends ChoiceGeneratorBase<Integer> 
 		return firstTime;
 	}
 	
+	public Constraint getInitialConstraint() {
+		return initialConstraint;
+	}
+	
+	public PathCondition getActivePathCondition() {
+		return activePathCondition;
+	}
+	
 	private class StackExpression {
 		public Expression expression;
 		public int iteration;
+		public PathCondition pathCondition;
 		
-		public StackExpression(Expression expression, int iteration) {
+		public StackExpression(Expression expression, int iteration, PathCondition pathCondition) {
 			this.expression = expression;
-			this.iteration = iteration;					
+			this.iteration = iteration;
+			this.pathCondition = pathCondition;
 		}
 		
 		@Override
 		public String toString() {			
-			return "{iteration: "+iteration+", expression: "+expression+"}";
+			return "{\n"
+					+ "iteration: "+iteration+",\n"
+					+ "expression: "+expression+",\n"
+					+ "pc: "+pathCondition+"\n"
+					+ "}";
 		}
-	}
+	}	
 }

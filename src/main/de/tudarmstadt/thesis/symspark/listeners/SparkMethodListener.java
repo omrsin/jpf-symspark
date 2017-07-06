@@ -1,6 +1,7 @@
 package de.tudarmstadt.thesis.symspark.listeners;
 
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -55,7 +56,16 @@ public class SparkMethodListener extends PropertyListenerAdapter implements Publ
 	@Override
 	public void publishFinished(Publisher publisher) {
 		PrintWriter pw = publisher.getOut();
-		publisher.publishTopicStart("PathConditionListener");
-		pw.println(coordinator.getValues());
+		publisher.publishTopicStart("PathConditionListener");		
+		if(!coordinator.getSolutions().isEmpty()) {
+			pw.println("Regular Dataset:");
+			pw.println(coordinator.getSolutions());
+		}
+		if(!coordinator.getIterativeSolutions().isEmpty()) {
+			pw.println("Iterative Dataset: ");
+			for(List<String> iterativeSolutions : coordinator.getIterativeSolutions()) {
+				pw.println(iterativeSolutions);
+			}
+		}		
 	}		
 }

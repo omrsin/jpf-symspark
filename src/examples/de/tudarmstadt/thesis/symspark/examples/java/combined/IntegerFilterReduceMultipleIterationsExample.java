@@ -15,9 +15,9 @@ import org.apache.spark.api.java.JavaSparkContext;
  * @author Omar Erminy (omar.erminy.ugueto@gmail.com)
  *
  */
-public class IntegerFilterReduceExample {
+public class IntegerFilterReduceMultipleIterationsExample {
 	public static void main(String[] args) {
-		System.out.println("Spark Java Integer Filter Reduce Test");
+		System.out.println("Spark Java Integer Filter Reduce with Multiple Iterations Test");
 		System.out.println("Expected analysis result [3, 4, -1000000]");
 		System.out.println("Expected execution result 11");
 		
@@ -31,8 +31,9 @@ public class IntegerFilterReduceExample {
 		JavaRDD<Integer> numbers = spark.parallelize(numberList);
 		
 		numbers.filter(v1 -> v1 > 2)
+			   .filter(v1 -> v1 <= 100)
 			   .reduce((v1, v2) -> {
-				   if(v2 > 3) return v1+v2+1;
+				   if(v1 > 3) return v1+v2+1;
 				   else return v1+v2;
 			   });
 		

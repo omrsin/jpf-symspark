@@ -5,18 +5,23 @@ import java.util.Stack;
 import gov.nasa.jpf.symbc.bytecode.BytecodeUtils;
 import gov.nasa.jpf.symbc.bytecode.BytecodeUtils.VarType;
 import gov.nasa.jpf.symbc.numeric.BinaryLinearIntegerExpression;
+import gov.nasa.jpf.symbc.numeric.ConstraintExpressionVisitor;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.IntegerConstant;
 import gov.nasa.jpf.symbc.numeric.IntegerExpression;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
-import gov.nasa.jpf.symbc.numeric.visitors.CollectVariableVisitor;
 
-public class ExpressionClonerVisitor extends CollectVariableVisitor {
+public class CloneExpressionVisitor extends ConstraintExpressionVisitor {
 	
-	Expression expression;
-	Stack<Integer> depthStack = new Stack<Integer>();
-	Stack<Expression> expressionStack = new Stack<Expression>();
+	protected Expression expression;	
+	protected Stack<Integer> depthStack;
+	protected Stack<Expression> expressionStack;
 
+	public CloneExpressionVisitor() {
+		this.depthStack = new Stack<Integer>();
+		this.expressionStack = new Stack<Expression>();
+	}
+	
 	@Override
 	public void preVisit(BinaryLinearIntegerExpression expr) {
 		depthStack.push(2);
@@ -46,7 +51,7 @@ public class ExpressionClonerVisitor extends CollectVariableVisitor {
 		return expression;
 	}
 	
-	private void process(Expression expr) {
+	protected void process(Expression expr) {
 		if(depthStack.isEmpty()) {			
 			expression = expr;
 		} else {

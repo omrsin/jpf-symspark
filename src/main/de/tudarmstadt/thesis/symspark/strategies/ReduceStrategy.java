@@ -3,11 +3,17 @@ package de.tudarmstadt.thesis.symspark.strategies;
 import java.util.Optional;
 
 import de.tudarmstadt.thesis.symspark.choice.SparkIterativeChoiceGenerator;
-import de.tudarmstadt.thesis.symspark.visitors.ExpressionClonerVisitor;
+import de.tudarmstadt.thesis.symspark.visitors.CloneExpressionVisitor;
+import de.tudarmstadt.thesis.symspark.visitors.ConstraintReplacementVisitor;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.bytecode.INVOKESTATIC;
 import gov.nasa.jpf.symbc.bytecode.INVOKEVIRTUAL;
+import gov.nasa.jpf.symbc.numeric.Constraint;
 import gov.nasa.jpf.symbc.numeric.Expression;
+import gov.nasa.jpf.symbc.numeric.IntegerExpression;
+import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
+import gov.nasa.jpf.symbc.numeric.PathCondition;
+import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.ThreadInfo;
@@ -54,22 +60,49 @@ public class ReduceStrategy extends AbstractMethodStrategy implements MethodStra
 		}
 		
 		if(hasMultipleIterations()) {
-			ExpressionClonerVisitor cloner = new ExpressionClonerVisitor();
+			CloneExpressionVisitor cloner = new CloneExpressionVisitor();
 			SparkIterativeChoiceGenerator cg = currentThread.getVM().getLastChoiceGeneratorOfType(SparkIterativeChoiceGenerator.class);
+			PCChoiceGenerator pccg = currentThread.getVM().getLastChoiceGeneratorOfType(PCChoiceGenerator.class);
 			if(cg.isFirstTime()) {
 				cg.setInputExpression(inputExpression);
 				inputExpression.accept(cloner);
 				accumulatedExpression = cloner.getExpression();
+				if(pccg != null) {
+					updatePathCondition(cg, pccg, ((IntegerExpression)accumulatedExpression), (SymbolicInteger)inputExpression);					
+				}
 			} else {
 				cg.getInputExpression().accept(cloner);
 				inputExpression = cloner.getExpression();
-				accumulatedExpression = cg.getOutputExpression();				
+				accumulatedExpression = cg.getOutputExpression();
+				if(pccg != null) {
+					updatePathCondition(cg, pccg, ((IntegerExpression)inputExpression), (SymbolicInteger)cg.getInputExpression());					
+				}
 			}
 			currentThread.getModifiableTopFrame().setLocalAttr(index-1, accumulatedExpression);			
 		}
 		currentThread.getModifiableTopFrame().setLocalAttr(index, inputExpression);
 	}
 	
+	private void updatePathCondition(SparkIterativeChoiceGenerator cg, PCChoiceGenerator pccg, 
+			IntegerExpression replacementExpression, SymbolicInteger originalExpression) {
+		
+		if(cg.getActivePathCondition() != null) {
+			pccg.setCurrentPC(cg.getActivePathCondition());
+		}		
+		
+		if(cg.getInitialConstraint() != null) {
+			ConstraintReplacementVisitor replacementVisitor = new ConstraintReplacementVisitor(originalExpression, replacementExpression);
+			cg.getInitialConstraint().accept(replacementVisitor);
+			
+			PathCondition pc = pccg.getCurrentPC();
+			
+			for(Constraint constraint : replacementVisitor.getConstraints()) {
+				pc.prependUnlessRepeated(constraint);
+			}							
+			pccg.setCurrentPC(pc);
+		}				
+	}
+
 	private int getMultipleIterations(ThreadInfo currentThread) {
 		Config conf = currentThread.getVM().getConfig();
 		int iterations = conf.getInt("spark.reduce.iterations");
@@ -80,8 +113,13 @@ public class ReduceStrategy extends AbstractMethodStrategy implements MethodStra
 		if(hasMultipleIterations()) {			
 			//Check for an already existing cg or create a new one
 			SparkIterativeChoiceGenerator cg = currentThread.getVM().getLastChoiceGeneratorOfType(SparkIterativeChoiceGenerator.class);
-			if(cg == null) {				
-				cg = new SparkIterativeChoiceGenerator("ReduceCG", iterations);
+			if(cg == null) {
+				PCChoiceGenerator pccg = currentThread.getVM().getLastChoiceGeneratorOfType(PCChoiceGenerator.class);
+				Constraint initialConstraint = null;
+				if(pccg != null) {
+					initialConstraint = pccg.getCurrentPC().header;
+				}
+				cg = new SparkIterativeChoiceGenerator("ReduceCG", iterations, initialConstraint);
 				currentThread.getVM().getSystemState().setNextChoiceGenerator(cg);
 			}
 		}
@@ -90,11 +128,16 @@ public class ReduceStrategy extends AbstractMethodStrategy implements MethodStra
 	private void updateIterativeChoiceGenerator(ThreadInfo currentThread) {
 		if(hasMultipleIterations()) {
 			SparkIterativeChoiceGenerator cg = currentThread.getVM().getLastChoiceGeneratorOfType(SparkIterativeChoiceGenerator.class);
-			cg.setOutputExpression((Expression) currentThread.getModifiableTopFrame().getSlotAttr(3));
+			PCChoiceGenerator pccg = currentThread.getVM().getLastChoiceGeneratorOfType(PCChoiceGenerator.class);
+			PathCondition pathCondition = null;
+			if(pccg != null) {
+				pathCondition = pccg.getCurrentPC().make_copy();
+			}
+			cg.setOutputExpression((Expression) currentThread.getModifiableTopFrame().getSlotAttr(3), pathCondition);
 		}		
 	}
 	
-	private boolean hasMultipleIterations() {
+	public boolean hasMultipleIterations() {
 		return iterations > 0;
 	}
 }
