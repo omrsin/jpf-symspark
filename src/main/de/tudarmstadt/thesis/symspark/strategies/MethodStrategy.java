@@ -16,4 +16,5 @@ public interface MethodStrategy {
 	public boolean hasMultipleOutputExpressions();
 	public Expression getSingleOutputExpression();
 	public void setSingleOutputExpression(Expression expression);
+	public boolean isIterative();
 }

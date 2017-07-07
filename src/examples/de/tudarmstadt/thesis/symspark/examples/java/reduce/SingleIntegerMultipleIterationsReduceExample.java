@@ -34,8 +34,8 @@ public class SingleIntegerMultipleIterationsReduceExample {
 		numbers.reduce(new Function2<Integer, Integer, Integer>() {			
 			@Override
 			public Integer call(Integer v1, Integer v2) throws Exception {
-				if(v1 > 8) return v1+v2+1;
-				else return v1+v2;				
+				if(v1 + v2 > 2) return v1+v2;
+				else return v1+v2+1;				
 			}
 		});
 		

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import de.tudarmstadt.thesis.symspark.choice.SparkIterativeChoiceGenerator;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.JPF;
 import gov.nasa.jpf.PropertyListenerAdapter;
@@ -12,6 +13,9 @@ import gov.nasa.jpf.report.ConsolePublisher;
 import gov.nasa.jpf.report.Publisher;
 import gov.nasa.jpf.report.PublisherExtension;
 import gov.nasa.jpf.search.Search;
+import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
+import gov.nasa.jpf.symbc.numeric.PathCondition;
+import gov.nasa.jpf.vm.ChoiceGenerator;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.ThreadInfo;
@@ -51,7 +55,7 @@ public class SparkMethodListener extends PropertyListenerAdapter implements Publ
 		if (search.isEndState()) {			
 			coordinator.setEndStateReached(true);
 		}
-	}
+	}	
 	
 	@Override
 	public void publishFinished(Publisher publisher) {

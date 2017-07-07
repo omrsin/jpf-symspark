@@ -5,12 +5,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import de.tudarmstadt.thesis.symspark.choice.SparkIterativeChoiceGenerator;
 import de.tudarmstadt.thesis.symspark.choice.SparkMultipleOutputChoiceGenerator;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkMethod;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidator;
 import de.tudarmstadt.thesis.symspark.jvm.validators.SparkValidatorFactory;
+import de.tudarmstadt.thesis.symspark.strategies.IterativeReduceStrategy;
 import de.tudarmstadt.thesis.symspark.strategies.MethodStrategy;
 import de.tudarmstadt.thesis.symspark.strategies.ReduceStrategy;
 import de.tudarmstadt.thesis.symspark.util.PCChoiceGeneratorUtils;
@@ -70,7 +72,7 @@ public class MethodSequenceCoordinator {
 				setMethodStrategy(pccg.getThreadInfo().getCallerStackFrame().getPrevious().getPrevious().getPC(), pccg.getThreadInfo());
 				if(endStateReached) {
 					if(pccg.getCurrentPC().solve()) {
-						if(methodStrategy instanceof ReduceStrategy && ((ReduceStrategy) methodStrategy).hasMultipleIterations()) {
+						if(methodStrategy.isIterative()) {
 							//TODO: Checking the header does not work in all cases
 							RootExpressionVisitor rootVisitor = new RootExpressionVisitor();
 							pccg.getCurrentPC().header.accept(rootVisitor);
@@ -125,7 +127,7 @@ public class MethodSequenceCoordinator {
 		Optional<String> option = validator.getSparkMethod(instruction); 
 		option.map(SparkMethod::getSparkMethod)
 			.ifPresent(sparkMethod -> {
-				methodStrategy = MethodStrategyFactory.switchMethodStrategy(sparkMethod, methodStrategy, currentThread);
+				methodStrategy = MethodStrategyFactory.switchMethodStrategy(sparkMethod, methodStrategy, currentThread, inputExpression);
 			});		
 	}
 	
@@ -140,7 +142,7 @@ public class MethodSequenceCoordinator {
 	}
 	
 	private List<String> parseSolutions(Set<Expression> expressions) {
-		List<String> solutions = new ArrayList<String>();
+		List<String> solutions = new ArrayList<String>();		
 		for(Expression expression : expressions) {
 			solutions.add(parseSolution(expression));
 		}

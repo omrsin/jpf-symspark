@@ -18,12 +18,16 @@ public abstract class AbstractMethodStrategy implements MethodStrategy {
 	
 	@Override
 	public void preProcessing(ThreadInfo currentThread, Instruction ins) {
-		//TODO: This validation could and should be done by the validator
 		if(ins instanceof INVOKEVIRTUAL && ((INVOKEVIRTUAL)ins).getInvokedMethodName().contains("call")) {
 			prepare(currentThread, 1);
 		} else if(ins instanceof INVOKESTATIC && ((INVOKESTATIC)ins).getInvokedMethodName().contains("lambda")) {
 			prepare(currentThread, 0);
 		}
+	}
+	
+	@Override
+	public boolean isIterative() {
+		return false;
 	}
 
 	public Expression getInputExpression() {

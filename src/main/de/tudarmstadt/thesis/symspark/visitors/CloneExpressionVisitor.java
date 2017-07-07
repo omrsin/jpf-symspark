@@ -13,7 +13,8 @@ import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 
 public class CloneExpressionVisitor extends ConstraintExpressionVisitor {
 	
-	protected Expression expression;	
+	protected Expression expression;
+	protected Expression newSymbolicVariable;
 	protected Stack<Integer> depthStack;
 	protected Stack<Expression> expressionStack;
 
@@ -39,6 +40,7 @@ public class CloneExpressionVisitor extends ConstraintExpressionVisitor {
 	public void postVisit(SymbolicInteger expr) {
 		String name = expr.getName().split("_[0-9]*_SYM.*")[0];
 		SymbolicInteger symInt = new SymbolicInteger(BytecodeUtils.varName(name, VarType.INT));
+		this.newSymbolicVariable = symInt;		
 		process(symInt);
 	}
 	
@@ -49,6 +51,10 @@ public class CloneExpressionVisitor extends ConstraintExpressionVisitor {
 	
 	public Expression getExpression() {
 		return expression;
+	}
+	
+	public Expression getNewSymbolicVariable() {
+		return newSymbolicVariable;
 	}
 	
 	protected void process(Expression expr) {

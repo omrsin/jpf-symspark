@@ -27,13 +27,15 @@ public class SparkIterativeChoiceGenerator extends ChoiceGeneratorBase<Integer> 
 	private boolean firstTime =  true;
 	private Constraint initialConstraint;
 	private PathCondition activePathCondition;
+	private Expression symbolicVariable;
 	
-	public SparkIterativeChoiceGenerator(String id, int totalIterations, Constraint initialConstraint) {
+	public SparkIterativeChoiceGenerator(String id, int totalIterations, Constraint initialConstraint, Expression symbolicVariable) {
 		super(id);
 		this.totalIterations = totalIterations;
 		this.currentIteration = 0;
 		this.initialConstraint = initialConstraint;
 		this.activePathCondition = null;
+		this.symbolicVariable = symbolicVariable;
 	}	
 
 	@Override
@@ -69,6 +71,9 @@ public class SparkIterativeChoiceGenerator extends ChoiceGeneratorBase<Integer> 
 	
 	public void setInputExpression(Expression inputExpression) {
 		this.inputExpression = inputExpression;
+		if(symbolicVariable == null) {
+			symbolicVariable = inputExpression;
+		}
 	}
 	
 	public Expression getInputExpression() {
@@ -98,7 +103,14 @@ public class SparkIterativeChoiceGenerator extends ChoiceGeneratorBase<Integer> 
 	}
 	
 	public PathCondition getActivePathCondition() {
-		return activePathCondition;
+		if(activePathCondition != null) {
+			return activePathCondition.make_copy();
+		}
+		return null;
+	}
+	
+	public Expression getSymbolicVariable() {
+		return symbolicVariable;
 	}
 	
 	private class StackExpression {
