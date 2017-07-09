@@ -7,6 +7,4 @@ target=${jpf-spark.package_path}.ErrorLogExample
 symbolic.dp=choco
 symbolic.string_dp=automata
 
-listener = de.tudarmstadt.thesis.symspark.listeners.SparkMethodListener
-
 spark.methods=filter;map

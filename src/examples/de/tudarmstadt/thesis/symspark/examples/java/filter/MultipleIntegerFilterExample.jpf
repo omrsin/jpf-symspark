@@ -6,6 +6,4 @@ target=${jpf-spark.package_path}.MultipleIntegerFilterExample
 
 symbolic.dp=choco
 
-listener = de.tudarmstadt.thesis.symspark.listeners.SparkMethodListener
-
 spark.methods=filter

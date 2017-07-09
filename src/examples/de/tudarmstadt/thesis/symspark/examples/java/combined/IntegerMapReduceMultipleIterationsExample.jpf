@@ -6,7 +6,5 @@ target=${jpf-spark.package_path}.IntegerMapReduceMultipleIterationsExample
 
 symbolic.dp=choco
 
-listener = de.tudarmstadt.thesis.symspark.listeners.SparkMethodListener
-
 spark.methods=map;reduce
 spark.reduce.iterations=2

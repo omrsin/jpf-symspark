@@ -31,7 +31,10 @@ public class IntegerMapReduceMultipleIterationsExample {
 		List<Integer> numberList = Arrays.asList(1,2,3,3,4);
 		JavaRDD<Integer> numbers = spark.parallelize(numberList);
 		
-		numbers.map(v1 -> v1 + 1)			   
+		numbers.map(v1 -> {
+			if(v1 > 2) return v1 + 1;
+			else return v1 +2;
+		})			   
 			   .reduce((v1, v2) -> {
 				   if(v1 > 3) return v1+v2+1;
 				   else return v1+v2;
