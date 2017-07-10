@@ -1,5 +1,5 @@
-JPF-SymSpark
-===============================================
+JPF-SymSpark: Symbolic Execution of Spark Programs using Java PathFinder
+========================================================================
 
 JPF-SymSpark is a **[Java PathFinder (JPF)](http://babelfish.arc.nasa.gov/trac/jpf/wiki/intro/start)** module whose goal is to coordinate the symbolic execution of **[Apache Spark](http://spark.apache.org/)** programs to produce a reduced input dataset that ensures full path coverage on a regular execution. It builds on top of **[Symbolic PathFinder (SPF)](http://babelfish.arc.nasa.gov/trac/jpf/wiki/projects/jpf-symbc)** to delegate the handling of symbolic expressions while it focus on how to interconnect Spark's transformations and actions in order to reason coherently over the execution flow of the program.
 
@@ -8,7 +8,12 @@ Table of contents
  
   * [Intallation](#installation)
     * [Docker approach](#docker-approach)
-    * [Manual approach](#manual-approach)    
+    * [Manual approach](#manual-approach)
+      * [Prerequisites](#prerequisites)
+      * [jpf-core](#jpf-core)
+      * [jpf-symbc](#jpf-symbc)
+      * [jpf-symspark](#jpf-symspark)
+      * [eclipse-jpf (optional)](#eclipse-jpf-(optional%29))  
   * [Usage](#usage)
   
 Installation
@@ -126,5 +131,17 @@ This is very simple and it is the most convenient way to run the analyses. In Ec
 The analyses can be run by right-clicking a jpf file and choosing the option **Verify**.
 
 Usage
-=======
+=====
 
+The JPF-SymSpark module is used in a similar way as SPF. However, some additional **.properties** were added to the \textit{properties} file of the module or must be included in the **.jpf** file used for a particular analysis in order execute correctly.
+
+The properties used are:
+
+- **spark.methods**: Used to indicate which spark operations are to be analyzed by the module. Every time a Spark operation with this name is found in the program it will be executed symbolically. This option replaces the use of the **symbolic.method** property used by SPF given that the target methods to be analyzed will be set dynamically during the analysis based on the spark operations defined. The values supported for this property are: *filter*, *map*, *reduce* and *flatMap*; multiple values must be separated with a semicolon.
+- **spark.reduce.iterations**: Used to indicate how many iterations of a reduce action will be analyzed. The value must be greater than 0. This option is only relevant if the reduce action was included among the methods to be analyzed in the *spark.methods* property.
+- **listener**: Defines the listener to be used during the analysis. By default, the module uses the *SparkMethodListener* as defined in its *.properties* file.
+- **jvm.insn_factory.class**: This property is used to specify the instruction factory used by the module. By default, the module uses the *SparkSymbolicInstructionFactory* as defined in the *.properties* file.
+
+Other SPF specific properties are still supported.
+
+The analysis can be run by means of the previously mentioned Eclipse plug-in or by execution through the command line as shown in the installation steps. Additional examples can be found in the **examples** directory of the JPF-SymSpark} module.
