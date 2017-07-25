@@ -21,6 +21,7 @@ import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
+import gov.nasa.jpf.symbc.numeric.SymbolicReal;
 import gov.nasa.jpf.symbc.string.StringSymbolic;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
@@ -90,8 +91,6 @@ public class MethodSequenceCoordinator {
 		} else if(vm.getChoiceGenerator() instanceof SparkMultipleOutputChoiceGenerator) {
 			SparkMultipleOutputChoiceGenerator cg = (SparkMultipleOutputChoiceGenerator) vm.getChoiceGenerator();
 			methodStrategy.setSingleOutputExpression(cg.getNextExpression());			
-		} else if(vm.getChoiceGenerator() instanceof SparkIterativeChoiceGenerator) {
-			// Here we should check if it is done and add all the values to the result;
 		}
 	}	
 
@@ -134,9 +133,11 @@ public class MethodSequenceCoordinator {
 	private String parseSolution(Expression expression) {
 		if(expression instanceof SymbolicInteger) {
 			return String.valueOf(((SymbolicInteger) expression).solution);
-		} else if (expression instanceof StringSymbolic) {
+		} else if(expression instanceof StringSymbolic) {
 			StringSymbolic symString = ((StringSymbolic) expression);			
 			return "\""+symString.solution+"\"";
+		} else if(expression instanceof SymbolicReal) {
+			return String.valueOf(((SymbolicReal) expression).solution);
 		}
 		return null;
 	}
