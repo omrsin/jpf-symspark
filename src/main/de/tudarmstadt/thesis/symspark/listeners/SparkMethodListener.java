@@ -58,18 +58,20 @@ public class SparkMethodListener extends PropertyListenerAdapter implements Publ
 	}	
 	
 	@Override
-	public void publishFinished(Publisher publisher) {
+	public void publishFinished(Publisher publisher) {		
 		PrintWriter pw = publisher.getOut();
-		publisher.publishTopicStart("PathConditionListener");		
+		publisher.publishTopicStart("Reduced Input Datasets");		
 		if(!coordinator.getSolutions().isEmpty()) {
 			pw.println("Regular Dataset:");
 			pw.println(coordinator.getSolutions());
 		}
 		if(!coordinator.getIterativeSolutions().isEmpty()) {
-			pw.println("Iterative Dataset: ");
+			pw.println("Iterative Datasets: ");
 			for(List<String> iterativeSolutions : coordinator.getIterativeSolutions()) {
 				pw.println(iterativeSolutions);
 			}
-		}		
-	}		
+			pw.println("Total Iterative Datasets: " + coordinator.getIterativeSolutions().size());
+		}
+		pw.println("Total Unsatisfiable Path Conditions: " + coordinator.getUnsatisfiablePCCounter());
+	}	
 }

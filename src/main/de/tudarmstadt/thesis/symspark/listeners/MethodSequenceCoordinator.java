@@ -35,6 +35,7 @@ public class MethodSequenceCoordinator {
 	private Set<String> solutions;
 	private Set<List<String>> iterativeSolutions;
 	private Expression inputExpression;
+	private int unsatisfiablePCCounter = 0;
 	
 	private boolean endStateReached = false;
 	
@@ -81,8 +82,8 @@ public class MethodSequenceCoordinator {
 						} else {
 							solutions.add(parseSolution(inputExpression));
 						}						
-					} else {					
-						//TODO: Do something if a PathCondition is unsatisfiable
+					} else {
+						unsatisfiablePCCounter++;
 						System.out.println("Current path condition not satisfiable: "+pccg.getCurrentPC());
 					}
 					endStateReached = false;				
@@ -111,6 +112,10 @@ public class MethodSequenceCoordinator {
 	
 	public void setEndStateReached(boolean endStateReached){
 		this.endStateReached = endStateReached;
+	}
+	
+	public int getUnsatisfiablePCCounter() {
+		return unsatisfiablePCCounter;
 	}
 	
 	// Private methods

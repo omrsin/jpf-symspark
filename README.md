@@ -13,7 +13,7 @@ Table of contents
       * [jpf-core](#jpf-core)
       * [jpf-symbc](#jpf-symbc)
       * [jpf-symspark](#jpf-symspark)
-      * [eclipse-jpf (optional)](#eclipse-jpf-(optional))  
+      * [eclipse-jpf (optional)]()  
   * [Usage](#usage)
   
 Installation
