@@ -6,6 +6,7 @@ JPF-SymSpark is a **[Java PathFinder (JPF)](http://babelfish.arc.nasa.gov/trac/j
 Table of contents
 =================
  
+  * [Repository Structure](#repository-structure)
   * [Intallation](#installation)
     * [Docker approach](#docker-approach)
     * [Manual approach](#manual-approach)
@@ -15,6 +16,14 @@ Table of contents
       * [jpf-symspark](#jpf-symspark)
       * [eclipse-jpf (optional)]()  
   * [Usage](#usage)
+  
+Repository Structure
+====================
+
+The repository follows the regular structure of a JPF module. A detailed description can be found [here](https://babelfish.arc.nasa.gov/trac/jpf/wiki/devel/modules).
+
+Additionally, the **doc** and **docker** directories contain the Javadoc documentation and the description of a docker image to facilitate the installation of the tool respectively.
+
   
 Installation
 ============
