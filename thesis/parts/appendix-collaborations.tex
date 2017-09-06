@@ -1,0 +1,101 @@
+\TUchapter{Appendix - Contributions and Collaborations to SPF}
+\label{app:collaborations}
+
+This appendix explains in detail all the modifications done to the \acrfull{acr:spf} extension that were necessary in order to be able to execute Apache Spark programs symbolically. These modifications were submitted as a patch for the \spf{} project to Corina Păsăreanu, lead developer and repository administrator of \spf{}. The changes are under revision and could be included in future releases. The modifications are:
+
+\begin{itemize}
+	\item Detection of synthetic bridge methods
+	\item Consistent ordering of String path conditions
+	\item Improvements to the visitor pattern in the symbolic constraints
+\end{itemize}
+
+\TUsection{Detection of Synthetic Bridge Methods}
+
+\begin{lstlisting}[
+language=Java,
+float,
+caption={[Symbolic Bridge Method Example - Sample Program] Example of a program where a symbolic bridge method will be added after compilation. The \textit{SampleInterface} is programmed as an interface over a generic type. Anytime this interface is implemented with a concrete type, an intermediate bridge method is created to cast the invocation of the method in the most generic type to the type specified in the concrete implementation.},
+label=lst:app:symbolic-bridge
+]
+public class SymbolicGenericTest {
+	interface SampleInterface<T> { /*# \label{lst:ln:app:synthetic-bridge:interface} #*/
+		public T call(T param); 
+	}
+	public static Integer sampleMethod(SampleInterface<Integer> a) { /*# \label{lst:ln:app:synthetic-bridge:method} #*/
+		return a.call(2); /*# \label{lst:ln:app:synthetic-bridge:method-call} #*/
+	}
+	public static void main(String[] args){
+		sampleMethod(new SampleInterface<Integer>() { /*# \label{lst:ln:app:synthetic-bridge:concrete-start} #*/
+			@Override
+			public Integer call(Integer param) {				
+				return param+1;
+			} /*# \label{lst:ln:app:synthetic-bridge:concrete-end} #*/
+		});
+	}
+}
+\end{lstlisting}
+
+The \textit{synthetic} modifier is a compiler-only modifier that marks a certain method or class included in the compiled bytecode that was not part of the original source code. Basically, it refers to any construct introduced by the compiler. There are several reasons to include synthetic constructs in the bytecode, for example, dynamic proxy classes or references in switch statements.
+
+Likewise, the \textit{bridge} modifier is a compiler-only modifier that is used to mark a method that simply delegates its invocation to another method, hence serving as a bridge. For example, bridge methods are necessary when implementing generic interfaces. After type erasure, the signatures of the concrete methods implementing an interface defined over a generic type will no longer match with the methods in the interface itself; the methods in the interface will be defined over the \textit{Object} class or the closest class in the hierarchy if the generic type was covariant or contravariant, while the methods in the class implementing the interface will be defined over the concrete type used in the implementation. This problem is solved by introducing bridge methods in the concrete implementation of the interface that match the signatures of the methods in the interface. These methods simply perform a cast in the parameters defined over the generic type and forward the call to the correct method. By definition, bridge methods are always synthetic given that they are constructs introduced by the compiler.
+
+Listing~\ref{lst:app:symbolic-bridge} shows an example where this can be appreciated. This example was chosen because of its resemblance to the way Spark operations are implemented. On line~\ref{lst:ln:app:synthetic-bridge:interface} an internal interface is defined over a generic type \textit{T}. On line~\ref{lst:ln:app:synthetic-bridge:method} the \textit{sampleMethod} is defined which takes an implementation of the aforementioned interface over the concrete \textit{Interger} type. This method invokes the \textit{call} method of the parameter interface with a concrete value. In lines~\ref{lst:ln:app:synthetic-bridge:concrete-start} to~\ref{lst:ln:app:synthetic-bridge:concrete-end} the interface is implemented over the \textit{Integer} type as an anonymous class and it is passed directly to an invocation of the \textit{sampleMethod} method. The code presented in the example is correct and it compiles without problems. However, it requires the inclusion of a \textit{synthetic bridge} method that fills the gap for those methods that do not match the signatures after type erasure. Listing~\ref{lst:app:symbolic-bridge-type-erasure} shows how the program in Listing~\ref{lst:app:symbolic-bridge} would look after type erasure. 
+
+Although the program shown in Listing~\ref{lst:app:symbolic-bridge-type-erasure} is not a valid Java program, it serves to illustrate the purpose of a \textit{synthetic bridge} method after type erasure occurs during the compilation phase. Line~\ref{lst:ln:app:synthetic-bridge-type-erasure:interface} shows the definition of the internal interface but this time the generic type has been replaced by the closest class higher in the hierarchy; the \textit{Object} class. Moreover, the method \textit{sampleMethod} defined in line~\ref{lst:ln:app:synthetic-bridge-type-erasure:method} does not assume that the passed object is an implementation of the interface over the \textit{Integer} type and, because of this, it requires both its return value and the parameters to be casted to the corresponding types matching the signature of the interface and the return type of the method itself. Lastly, lines~\ref{lst:ln:app:synthetic-bridge-type-erasure:concrete-start} to~\ref{lst:ln:app:synthetic-bridge-type-erasure:concrete-end} contain the implementation of the interface, however, the overridden method works now as a bridge method between the concrete implementation of type \textit{Integer}. 
+
+This kind of code is common among Spark programs to specify the functions passed to the actions and transformations. Most of the Spark operations depend on functions that are defined based on several functional generic interfaces, for example, the \textit{Function} interface used in the \textit{filter} transformation and the \textit{Function2} interface used in the \textit{reduce} action. Disregarding whether these functions are implemented as anonymous classes or lambda expressions, the existence of symbolic bridge methods will always be present as a consequence of type erasure.
+\\ \\ \\ \\ \\
+Let us assume that we would like \spf{} to carry out a symbolic execution of the method \textit{call}. Then, the \textit{symbolic.method} property in the \textit{.jpf} file should point to:
+
+\hspace*{1cm} \texttt{symbolic.method= SymbolicGenericTest\$1.call(sym)}
+
+The relevant method invocation in the analysis would be the one defined over the \textit{Integer} type which is the one that actually has an implementation. However, the \textit{symbolic.method} property does not provide any information about the types of the symbolic parameters; it might try to analyze a method matching the method name and class but defined over the \textit{Object} class, as well as one defined over the \textit{Integer} type.
+
+\begin{lstlisting}[
+language=Java,
+float,
+caption={[Symbolic Bridge Method Example - Type Erasure] This is the same sample program shown in Listing~\ref{lst:app:symbolic-bridge} but showing how it would look after type erasure. This sample, although not a compiling Java program, illustrates the necessity of \textit{synthetic bridge} methods to ensure correct inheritance after type erasure.},
+label=lst:app:symbolic-bridge-type-erasure
+]
+public class SymbolicGenericTest {
+	interface SampleInterface { /*# \label{lst:ln:app:synthetic-bridge-type-erasure:interface} #*/
+		public Object call(Object param); 
+	}
+	public static Integer sampleMethod(SampleInterface a) { /*# \label{lst:ln:app:synthetic-bridge-type-erasure:method} #*/
+		return (Integer)a.call((Object)2);
+	}
+	public static void main(String[] args){
+		sampleMethod(new SampleInterface() { /*# \label{lst:ln:app:synthetic-bridge-type-erasure:concrete-start} #*/
+			@Override
+			public synthetic bridge Object call(Object param) {
+				return (Object)call((Integer)param);
+			}
+			public Integer call(Integer param) {				
+				return param+1;
+			} /*# \label{lst:ln:app:synthetic-bridge-type-erasure:concrete-end} #*/
+		});
+	}
+}
+\end{lstlisting}
+
+This occurs in line~\ref{lst:ln:app:synthetic-bridge:method-call} of Listing~\ref{lst:app:symbolic-bridge} when the method \textit{call} is invoked. This line triggers an \texttt{INVOKEINTERFACE} instruction that attempts to invoke the \textit{synthetic bridge} \textit{call} method. At this point, \spf{} detects a method invocation that matches the specified property and attempts to set the symbolic variables. Nevertheless, under this circumstances, \spf{} always stopped the analysis and aborted the execution due to an unhandled exception relative to empty method arguments.
+
+Considering that \textit{synthetic bridge} methods should not be relevant to any symbolic execution and having detected that the faulty behavior only occurred when \textit{synthetic bridge} methods were found, we resolved that only methods which did not contain the \textit{synthetic} nor \textit{bridge} modifiers should be considered as valid targets for the analysis.
+
+For this purpose, a new validation was included in the \textit{BytecodeUtils} class of \spf{}. This validation consists of comparing the modifiers of the invoked method an determining if they contain the \textit{0x0040} and \textit{0x1000} values as specified in the official specification of the \acrshort{acr:jvm}~\cite{Lindholm2014}. After implementing the change, the symbolic execution of methods in this scenario worked as expected. 
+
+\TUsection{Order of String Path Conditions}
+
+This change is rather simple. It aims to maintain consistency on the way regular path conditions and String path conditions explore their options. Although we consider that both path conditions should be refactored in order to respond to a common API, a temporary solution to this problem was more efficient in terms of time and resources.
+
+The basic idea behind this modification was to switch the ways String path conditions were explored; the path that evaluated to \textit{false} first followed by the path that evaluated to \textit{true}. This was helpful when dealing with some strategies, for example in the case of the filter strategy (see Figure~\ref{fig:strategies:filter}) where the negative branch triggers an immediate break in the state transition. If this change had not been included, a verbose check would have been necessary on every instance where a path condition would have been processed.
+
+\TUsection{Improving the Visitor Pattern in the Symbolic Constraints}
+
+\spf{} implements both symbolic constraints and symbolic expressions following the visitor pattern~\cite{Gamma1994}. Symbolic expressions are used to represent any transformation of a symbolic value during the execution. They contain a left operand, a right operand, and an operator; the operands have to be symbolic expressions as well. When a visitor is used to explore the data structure, first the current element is visited and then the left and right operands are visited respectively. 
+
+On the other hand, symbolic constraints are used to represent boolean expressions evaluated on symbolic values. Constraints are used to produce path conditions, which in turn are later parsed and passed to the solvers to determine their satisfiability. On the contrary to what it could be expected, symbolic constraints were not implemented in the same way as the symbolic expressions. They contain also a left and right operand, and an operator but, additionally they maintain a reference to a chained constraint kept in an attribute called \textit{and}.
+
+The implementation of the visitor pattern in the case of the constraints was forwarded to the left and right operands but not to the following constraints referenced by the \textit{and} attribute. This resulted in incomplete visits, not being able to explore completely all the constraints in a path condition. This was particularly necessary in the case of the iterative reduce strategy (see Figure\ref{fig:strategies:reduce:symbolic}), where the path condition, prior to the \textit{reduce} method, was cloned to match the new symbolic variable generated each iteration.
+
+In this case, the modification was trivial. If the \textit{and} attribute of the constraint was not null then it would accept a visitor prior to the left and right operands. This behaves similarly to a depth-first search.

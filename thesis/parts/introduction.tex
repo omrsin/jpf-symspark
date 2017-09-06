@@ -1,0 +1,70 @@
+\TUchapter{Introduction}
+\label{ch:introduction}
+
+\TUsection{Background}
+% Explain current trends of technologies and how they depend on data even more (Mention Gartner's Hype Cycle)
+
+% Mention the rise to fame of map reduce as the first massively successfull distributed big data framework applied to a variety of uses case
+
+% Mention that MapReduce opened the doors for many improvements among them Spark.
+
+%The last twenty years have brought many technological advancements. (Guido suggested removing this)
+
+The massive worldwide adoption of the Internet has created a gigantic platform where uncountable amounts of information are produced and shared. Likewise, the shift of many industries into the digital plane enabled the generation and storage of huge volumes of data. In 2012, Google stated that its search engine had indexed more than 30 trillion unique URLs and that it had handled more than one trillion searches that year~\cite{WebGoogleZeitgeist2017}. Similarly, Rolls Royce announced they were using big data to drive the manufacturing process of their engines, gathering as much as three petabytes of data per year for every single piece conforming a turbine~\cite{WebForbes2017,WebRollsRoyce2017}.
+
+%TODO: Weak and out of context considering the next chapter
+%Nowadays, the ubiquitous nature of data has impacted our daily lives; handheld devices constantly tracking their location to improve direction services, social networks profiling user activities to target advertisements, just to name but a few. Moreover, Gartner shows in their latest revision of the yearly hype cycle for emerging technologies that the need and use of data will be transversal to many disciplines in the near future, mostly due to rise of machine learning~\cite{WebGartner2017}.
+
+Processing such volumes of data in a sensible and timely manner required innovative computational paradigms. Google's GFS~\cite{Ghemawat2003} and MapReduce~\cite{Dean2008} were presented as a successful model for distributed computation that was flexible enough to handle a wide variety of big data related tasks while at the same time it was able to scale swiftly with the amount of data processed. One of the key elements that fostered the success of MapReduce among developers is that the complex logic of distributed software was hidden behind programming constructs acting as abstractions; the outcome was a flexible but bounded toolkit for the development of distributed applications.
+
+Ever since the rise of MapReduce, the attention of both the industry and the academy has turned into distributed computation algorithms in the search of better and more efficient approaches. This gave rise to many improved models and big data development frameworks; one of them being Apache Spark~\cite{Zaharia2012a}, a fault-tolerant distributed processing framework that uses a shared memory abstraction in order to offer better performance.
+
+\TUsection{Problem Statement}
+
+% Mention the need for improving the technologies used to develop and test big data applications. Focus on the fact that applications run in the cloud and testing behavior cannot be expected to run frequenty because it would result costly.
+
+% Present a written example
+
+% Mention other attempts to test and debug big data applications and/or Spark. Mention data provenance as a mean for tracing back errors, or debugging. Mention traditional testing techniques.
+
+% Mention how symbolic execution has been used in the past to verification and testing purposes. Clear out the relevance of applying other kind of analysis that would aid in the development process
+
+As any other software, applications written for distributed big data frameworks are susceptible to bugs and errors. However, there are particular consequences in the context of distributed software. For instance, mishandled errors can permeate to multiple nodes, collapsing a whole cluster of computers. Furthermore, if the distributed computations are executed in third-party cloud servers, faulty applications could implicate additional monetary costs to the party paying for the cloud platform. These implications also affect the development process, a developer should not check the applications only in a cloud environment; she should count with the right tools to assess and ensure the quality of the software before deploying it into the cloud.
+
+For these reasons, ensuring code quality during the development phase of big data applications is critical. In this sense, several program testing techniques have been used in the context of distributed programming. Unit testing has been widely adopted without major adaptations, given that many of these frameworks are based on existing programming languages that supported the testing technique. Moreover, other techniques, such as debugging, have been adapted to match the specifics of big data applications. Tools like Titian~\cite{Interlandi2015} and BigDebug~\cite{Gulzar2016} focused on debugging capabilities that enforced interactivity and data provenance, being the latter a particular relevant matter in data intensive applications.
+
+However, program analysis techniques have received less attention. At most, some big data frameworks allow the definition of tasks in the form of a declarative language, such as the case of Spark SQL~\cite{Armbrust2015}. In these cases, code analysis impacts the performance of the application but it would not be possible to infer anything about the correctness of a program. Alternative formal methods and analyses could also prove useful towards the goal of improving code quality and their automated nature could provide a mechanism for a continuous evaluation. In particular, symbolic execution~\cite{Hoare1969,King1976} is a dynamic program analysis technique that characterizes a program in terms of the boolean path conditions that defines it; one of the uses for such information is the automated generation of unit tests. 
+
+\TUsection{Aim and Research Questions}
+%TODO: rephrase
+This thesis aims to identify if \textit{symbolic execution techniques can be used in the context of Apache Spark as a big data framework to generate reduced input datasets that enforce full path coverage}.
+
+The following research questions are relevant for this study:
+
+\begin{enumerate}
+	\item Is symbolic execution a suitable technique for analyzing programs in the context of Spark applications?
+	\item What are the particular characteristics associated with the symbolic execution of a Spark program?
+	\item Is there a symbolic execution framework that can be adapted to perform symbolic executions of Spark programs?
+	\item If it exists, what are the advantages and disadvantages of such a framework in the context of Spark applications?
+\end{enumerate}
+
+\TUsection{Contributions}
+\label{sec:contributions}
+
+This work introduces \textit{JPF-SymSpark}, a symbolic execution framework for Apache Spark programs built as an extension of \acrfull{acr:jpf}~\cite{Visser2003}. The main goal of \textit{JPF-SymSpark} is to generate reduced input datasets that offer full path coverage of the analyzed program. Such datasets can have several uses in the development process of a Spark application, for example, as input data for unit tests.
+
+The tool is able to symbolically execute Spark programs that handle primitive data types and Strings as their input datasets. It is also capable of chaining multiple Spark operations during a symbolic execution; providing the mechanisms for a complete analysis of a program instead of a method-by-method approach. This reasoning over the interrelation of Spark operations and the data flow among them is the most useful contribution of this work. To our knowledge, there has not been any study related to the application of symbolic execution in big data frameworks.
+
+\textit{JPF-SymSpark} is built on top of \acrfull{acr:spf}, a symbolic execution extension of \jpf{} for general Java programs. During the development of the tool, \spf{} presented unexpected behaviors when analyzing certain programs. Most of these abnormal results were caused by common programming practices in Spark applications, for example, the use of anonymous classes and lambda expressions to represent the parameter functions passed to many of Spark's operations. The \spf{} extension was modified accordingly in order to cope with these scenarios. The modifications introduced to \spf{} are: the \textit{detection of synthetic bridge methods}, \textit{consistent ordering of String path conditions}, and \textit{general improvements to the visitor pattern in the symbolic constraints}. A detailed explanation about the contributions and modifications to \spf{} can be found in appendix~A.
+
+The evaluation of the approach is twofold. The first part consists of a qualitative appraisal that aims to determine how compliant \textit{JPF-SymSpark} is in terms of a series of functional and non-functional requirements defined for a tool of such purpose. The second part is a performance assessment of the iterative symbolic operations carried out during an analysis. Additionally, a discussion over the limitations of \textit{JPF-SymSpark} is presented in order to establish the scope and capabilities of its current state.
+
+\TUsection{Outline}
+
+The following chapters are structured in such a way that the reader is able to build the necessary technical knowledge to properly understand the developed tool. Chapter~2 introduces the technologies and concepts on which this work is based. In this chapter, Section~\ref{sec:spark} presents the fundamentals of Apache Spark. Section~\ref{sec:program-analysis} briefly explains program analysis as a verification technique and provides an introduction to the concept of symbolic execution. Finally, Section~\ref{sec:jpf} introduces \acrlong{acr:jpf} and its extension \acrlong{acr:spf}, a program analysis framework build for the Java programming language and its symbolic execution module respectively.
+
+Chapter~3 focuses on the application of symbolic execution techniques on Apache Spark programs. Section~\ref{sec:conceptual-process} analyzes the conceptual implications of using symbolic execution in the context of big data frameworks, Section~\ref{sec:logic:example} presents two concrete examples, and Section~\ref{sec:jpf-symspark} introduces \textit{JPF-SymSpark} and its technical details. It is strongly advised that the reader becomes familiar with the technical concepts, in particular with the intricacies of \jpf{}, before reading this chapter.
+
+Chapter~4 presents the evaluation of the proposed tool and clarifies its limitations. Finally, Chapter~5 concludes the work on a discussion of the research questions and suggests a guideline for future work. For further reading, appendix A provides an extended explanation of the contributions submitted to the \spf{} project, while appendix B presents a guide for the installation and usage of \textit{JPF-SymSpark}.
+
+ 

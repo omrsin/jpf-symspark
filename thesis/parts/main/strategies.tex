@@ -1,0 +1,245 @@
+\TUsubsection{Method Strategies}
+\label{subsec:module:strategies}
+
+The method strategies specify the concrete behavior of the analysis for each relevant Spark operation. They implement how the analysis is to be carried out, particularly during the pre-processing and post-processing phases. Additionally, they maintain a reference to the input and output values of the operation.
+
+The supported Spark operations are: \textit{filter}, \textit{map}, \textit{reduce} and \textit{flatMap}.
+
+This section explains what particular conditions apply to each strategy and how are they carried out through the analysis.
+
+\TUsubsubsection{\textit{filter}}
+
+The purpose of the \textit{filter} transformation is to produce a new \acrshort{acr:rdd} containing only the elements that satisfy a given predicate. The predicate is passed to the transformation in the form of a boolean function that is invoked for each element of the \acrshort{acr:rdd}. Because of this reason, the \textit{filter} transformation itself always implies at least two possible execution paths, one for those who satisfy the predicate and one for those who do not. Figure~\ref{fig:strategies:filter} depicts the symbolic execution of a \textit{filter} transformation according to the filter strategy.
+
+% Define block styles
+\tikzstyle{block} = [rectangle, draw, fill=white, align=center,rounded corners, minimum height=3em, minimum width=3em, drop shadow]
+\tikzstyle{invisible-block} = [rectangle, draw=none, fill=none, align=center, minimum height=3em, minimum width=3em]
+\tikzstyle{triangle} = [isosceles triangle, draw, fill=white, align=center, shape border rotate=-180, minimum height=3em, minimum width=2cm, drop shadow]
+\tikzstyle{line} = [draw, -{>[length=2mm, width=1mm]}]
+\begin{figure}[h]
+	\centering
+	\begin{tikzpicture}[node distance=6cm, auto]
+	% Place nodes	
+	\node [invisible-block] (INIT) {...};
+	\node [triangle, right of=INIT] (FILTER) {\textit{filter}};
+	\node [invisible-block, right of=FILTER, minimum width=2cm] at (FILTER.right corner) (TRUE) {...};
+	\node [block, right of=FILTER] at (FILTER.left corner) (BACKTRACK) {Backtrack};
+	
+	% Draw edges
+	\path [line] (INIT) -- node[]{\footnotesize $SYM\_EXPR$}(FILTER.apex);
+	\path [line] (FILTER.right corner) -- node[below]{\textit{true}} node[]{\footnotesize $SYM\_EXPR$}(TRUE);
+	\path [line] (FILTER.left corner) -- node[below]{\textit{false}}(BACKTRACK);
+	
+	\end{tikzpicture}
+	\caption[Diagram of the \textit{filter} Strategy]{Diagram of the \textit{filter} strategy. The input parameter is initialized to the symbolic expression percolated by the previous Spark operation if there is any, otherwise, a new symbolic expression is used instead. Filter transformations always produce at least two branches, one that satisfies the predicate and one that does not. In the case of the branch that does not satisfy it, the execution is terminated and an immediate backtrack is triggered. The output of the transformation is always the same input symbolic expression disregarding the path taken.}
+	\label{fig:strategies:filter}
+\end{figure}
+
+\textit{Pre-processing}
+
+During the pre-processing phase, the filter strategy only checks for the invocation of the parameter function and validates if it is coming from an \texttt{invokevirtual} or an \texttt{invokestatic} bytecode instruction. If it is coming from an \texttt{invokevirtual} (the function was implemented as an anonymous class), the strategy manipulates the stack frame of the current invocation and replaces the element in the second position with the symbolic expression passed by the coordinator. This element corresponds to the input parameter of the passed function (i.e., an element of the \acrshort{acr:rdd}). The replacement of the second element is necessary because, if this is not done, \spf{} will call the function with a new symbolic expression instead, breaking the continuity of the analysis. The reason the second element is the one replaced instead of the first is that, in the stack frame of an \texttt{invokevirtual} instruction, the first position contains a reference to the invoking object instead (i.e., a reference to \texttt{this}). On the contrary, if the invocation of the function comes from a \texttt{invokestatic} instruction (the function was implemented as a lambda expression), then the first element is replaced in the stack frame because \texttt{invokestatic} instructions do not have references to the invoking object itself.
+
+Given that the \textit{filter} transformation always implies a fork in the control flow, it is most likely that a choice generator was registered by \spf{}
+during the execution of the method in order to explore the possible paths. Needless to mention, this only occurs if the symbolic expression passed to the function participates in any of the conditional operations, otherwise, no choice generator is registered; then again, this scenario is irrelevant given that it means that the filter does not act upon the values of the \acrshort{acr:rdd}.
+
+\textit{Post-processing}
+
+On the post-processing phase, the strategy checks if the exited method is actually the \textit{filter} transformation and proceeds to obtain the last registered choice generator. As explained above, this choice generator will always be a path condition choice generator registered by \spf{}. Then the strategy proceeds to validate if the path currently executing corresponds to the negative evaluation of the predicate, in which case the execution of the thread is abruptly interrupted and a backtrack action is forced. The reason for this relies upon the fact that exploring a path with a negative filter condition is not relevant given that this path will never be executed in a Spark program. However, by forcing the backtrack action, the analysis is guided to find a solution that satisfies that path, which ends in a value that does not pass the filter (necessary for full path coverage).
+
+The symbolic input of a \textit{filter} transformation does not suffer any permanent modification during its execution. For this reason, the output of the \textit{filter} transformation is the same input value passed to the function during the pre-processing phase.
+
+\TUsubsubsection{\textit{map}}
+
+The \textit{map} transformation constructs a new \acrshort{acr:rdd} containing the result of applying the parameter function to each element of the initial \acrshort{acr:rdd}. Normally, the input value passed to the parameter function is used in the operation that produces the output value, hence making the output be a derivation of the input value. Considering this rationale in the context of a symbolic execution, the output of the parameter function passed to a \textit{map} transformation is defined in terms of the input symbolic expression. Figure~\ref{fig:strategies:map} depicts the symbolic execution of a \textit{map} transformation according to the map strategy.
+
+% Define block styles
+\tikzstyle{block} = [rectangle, draw, fill=white, align=center,rounded corners, minimum height=3em, minimum width=3em, drop shadow]
+\tikzstyle{invisible-block} = [rectangle, draw=none, fill=none, align=center, minimum height=3em, minimum width=3em]
+\tikzstyle{triangle} = [isosceles triangle, draw, fill=white, align=center, shape border rotate=-180, minimum height=3em, minimum width=2cm, drop shadow]
+\tikzstyle{line} = [draw, -{>[length=2mm, width=1mm]}]
+\begin{figure}[h]
+	\centering
+	\begin{tikzpicture}[node distance=6cm, auto]
+	% Place nodes	
+	\node [invisible-block] (INIT) {...};
+	\node [triangle, right of=INIT] (MAP) {\textit{map}};
+	\node [invisible-block, right of=MAP] at (MAP.right corner) (SCN1) {...};
+	\node [invisible-block, right of=MAP] at (MAP.30) (SCN2) {...};
+	\node [invisible-block, right of=MAP] at (MAP.left corner) (SCN3) {...};
+	
+	% Draw edges
+	\path [line] (INIT) -- node[]{\footnotesize $SYM\_EXPR$}(MAP.apex);
+	\path [line] (MAP.right corner) -- node[]{\footnotesize $SYM\_EXPR^I$}(SCN1);
+	\path [line] (MAP.30) -- node[below=3mm]{...} node[]{\footnotesize $SYM\_EXPR^{II}$}(SCN2);	
+	\path [line] (MAP.left corner) -- node[]{\footnotesize $SYM\_EXPR^N$}(SCN3);
+	
+	\end{tikzpicture}
+	\caption[Diagram of the \textit{map} Strategy]{Diagram of the \textit{map} strategy. The input parameter is initialized to the symbolic expression percolated by the previous Spark operation if there is any, otherwise, a new symbolic expression is used instead. The output value percolated to the following functions is a new symbolic expression derived from any operations applied on the symbolic input. Map transformations do not necessarily have a branching condition, however, in the case there are, it is most likely that the output value will be different.}
+	\label{fig:strategies:map}
+\end{figure}
+
+\textit{Pre-processing}
+
+The pre-processing phase is identical to the pre-processing phase of the filter strategy. The handling of the input parameters of the passed function is carried out in the same way given that, in both cases, the passed functions have the same number of input parameters, hence their stack frame behaves the same.
+
+\textit{Post-processing}
+
+In the post-processing phase, the map strategy waits until the passed function finishes its execution. This is done by checking if the exited method matches the full descriptor of the \textit{call} method in either the anonymous class or lambda expression that represents the passed function. Once it detects the right exited method then it stores its output value in an attribute of the strategy. This value will be used the next time strategies are switched and it will be used as the input value of the next Spark operation.
+
+A \textit{map} transformation does not have a branching condition necessarily; it might be the case that the \acrshort{acr:rdd} is just manipulated and an output value returned. However, even in this case, the transformation of the symbolic input needs to be tracked in order to percolate it to the next Spark operation. Chaining output and input values between Spark operations is of utmost importance in order to build precise path conditions that faithfully represent the control flow of the program.
+
+In the case the \textit{map} transformation incurs in any branching condition, then \spf{} will register the respective choice generators and all the options will be explored accordingly. Such a case leads to potentially different outputs depending on which path was taken.
+
+
+\TUsubsubsection{\textit{reduce}}
+
+The \textit{reduce} action produces a single output value resulting from the combination of all the elements in the \acrshort{acr:rdd}. The combination is defined in the function passed to action, which has to fulfill the properties of being commutative and associative. The function passed to the action implements the \textit{Function2} interface, whose main difference is that it takes two input parameters: the first is the accumulated value of the operation so far, and the second represents one element in the \acrshort{acr:rdd}. The behavior of a \textit{reduce} action resembles a full scan of the elements of the \acrshort{acr:rdd}, carrying always the accumulated value iteration over iteration.
+
+Reduce actions can be analyzed following two different strategies: one where the accumulated parameter of the function is not considered as a symbolic variable and another where it is. The strategy discussed next refers to the former; the latter is explained in the subsequent section. The user indicates which mode to use by specifying it in the configuration file.
+
+\textit{Pre-processing}
+
+This strategy considers the input parameter corresponding to a single element in the \acrshort{acr:rdd} as the percolated symbolic expression, however, the parameter corresponding to the accumulated value of the reduce action is considered as a concrete input. 
+
+The analysis takes advantage of the concolic operational mode of \spf{} by defining the method to be inspected with the first parameter as a concrete input (achieved by using the ``con'' keyword instead of ``sym'' in the fully qualified method name). Afterwards, in a similar fashion as in the filter and map strategies, the second or third element in the stack frame is replaced with the percolated symbolic expression (depending if the instruction is \texttt{invokevirtual} or \texttt{invokestatic}). Figure~\ref{fig:strategies:reduce:concrete} illustrates this mode.
+
+\textit{Post-processing}
+
+Independently of the output of the \textit{reduce} action, the post-processing phase of the reduce strategy always triggers a termination of the current execution thread and a backtrack. This is because of the nature of Spark actions which indicate the culmination of the processing of an \acrshort{acr:rdd}. However, during the analysis of the reduce action, there might be branching operations executed on the single parameter, which will cause \spf{} to register a choice generator and explore all the possible paths. Ultimately, all these paths will lead to a backtrack after the end of the \textit{reduce} action.
+
+\TUsubsubsection{\textit{iterativeReduce}}
+
+The second strategy that can be used when analyzing \textit{reduce} actions considers both parameters of the passed function as symbolic. The direct consequence of this consideration is that the symbolic engine has to reason now over a variable that represents an accumulated value resulting from the application of the passed function several times. Given that the number of elements in the \acrshort{acr:rdd} is irrelevant for the sake of the analysis, the user has to specify how many iterations of the \textit{reduce} action will be carried out in order to ensure termination. However, path explosion can occur easily given that each iteration makes the number of reachable states grow exponentially.
+
+The complexity of this strategy is noticeable in comparison to the other strategies. The expected output dataset now becomes a family of datasets corresponding to the number of elements indicated to be in the \acrshort{acr:rdd}. The path conditions take into consideration multiple symbolic variables that have to comply with all the transformations and constraints collected so far. The particular aspects of the output datasets are detailed in Section~\ref{subsec:module:output}.
+
+% Define block styles
+\tikzstyle{block} = [rectangle, draw, fill=white, align=center,rounded corners, minimum height=3em, minimum width=3em, drop shadow]
+\tikzstyle{invisible-block} = [rectangle, draw=none, fill=none, align=center, minimum height=3em, minimum width=3em]
+\tikzstyle{diamond} = [shape=diamond, draw, fill=white, align=center, minimum height=3em, minimum width=2cm, drop shadow]
+\tikzstyle{line} = [draw, -{>[length=2mm, width=1mm]}]
+
+\begin{figure}[t]
+	\centering
+	\begin{tikzpicture}[node distance = 4cm, auto]	
+	% Place nodes	
+	\node [invisible-block] (INIT) {...};
+	\node [diamond, right of=INIT, node distance=8cm] (REDUCE) {\textit{reduce}};
+	\node [block, right of=REDUCE] at (REDUCE.east) (BACKTRACK) {Backtrack};
+	
+	% Draw edges
+	\path [line] (INIT) -- node[]{\footnotesize $(CONC, SYM\_EXPR)$}(REDUCE.west);
+	\path [line] (REDUCE.east) -- (BACKTRACK);	
+	\end{tikzpicture}
+	
+	\begin{minipage}[t]{\linewidth}
+		\subcaption{Reduce strategy with the accumulated value taken as a concrete input.} 
+		\label{fig:strategies:reduce:concrete}
+	\end{minipage}
+	\vspace{\belowdisplayskip}
+	
+	\begin{tikzpicture}[node distance = 4cm, auto]	
+	% Place nodes	
+	\node [invisible-block] (INIT) {...};
+	\node [diamond, right of=INIT, node distance=8cm] (REDUCE) {\textit{reduce}};
+	\node [block, right of=REDUCE] at (REDUCE.east) (BACKTRACK) {Backtrack};
+	
+	% Draw edges
+	\path [line] (INIT) -- node[]{\footnotesize $(SYM\_EXPR^I, SYM\_EXPR^{II})$}(REDUCE.west);
+	\path [line] (REDUCE.east) -- (BACKTRACK);
+	\path [line] (REDUCE) edge [loop above] node[]{\footnotesize $(SYM\_EXPR^{X_n}, SYM\_EXPR^{Y_n})$} ();	
+	\end{tikzpicture}
+	
+	\begin{minipage}[t]{\linewidth}
+		\subcaption{Reduce strategy with the accumulated value taken as a symbolic input. The value $n$ represents \\ a given iteration.}
+		\label{fig:strategies:reduce:symbolic}
+	\end{minipage}
+	
+	\caption[Diagrams of the \textit{reduce} Strategy]{Diagrams of the \textit{reduce} Strategy. The two modes of execution are shown here. The first considers the accumulated input parameter as concrete, this translates to only considering branching operations applied on single elements of the \acrshort{acr:rdd}. The other mode considers the accumulated to be a symbolic input as well and iterates over the operation a fixed number of times. A backtrack is always triggered after a reduce action.}
+\end{figure}
+
+\textit{Pre-processing}
+
+As mentioned before, this strategy considers both parameters of the function passed to the \textit{reduce} action as symbolic variables. Once the \textit{reduce} actions is detected, a new choice generator called \textit{SparkIterativeChoiceGenerator} is registered. This choice generator is used to keep a counter with the number of times the function has to be executed and it also keeps track of the output of each of the iterations; it is not used as a value provider in a direct sense rather as a placeholder to keep track of the iterative execution. The current path condition, if any, is also kept in the choice generator along with the single symbolic variable used so far. This value will serve as a template for creating new symbolic variables that comply with the conditions accumulated to this point.
+
+Once the execution of the \textit{call} method is detected, the strategy follows one of two approaches: If there are no accumulated values registered in the \textit{SparkIterativeChoiceGenerator} choice generator then a new symbolic expression is created taking into consideration the base structure of the percolated expression. This new expression is used as the first accumulated value while the percolated expression is used as the single input value. On the other case, an output value (representing the result of a previous iteration) is taken from the choice generator and set as the accumulated value while a new symbolic expression is produced and set as the regular single input value of the function. Figure~\ref{fig:strategies:reduce:symbolic} illustrates this mode.
+
+As a technical note, symbolic expressions and path conditions are implemented in \spf{} following the \textit{visitor} design pattern~\cite{Gamma1994}. New visitors were implemented in order to create copies of existing expressions and conditions among others.
+
+\textit{Post-processing}
+
+Once the \textit{call} method finishes execution the current path condition is extended by enforcing the same initial constraints on the newly generated expressions for this iteration. Additionally, any constraints accumulated from a previous iteration must also be included in the current path condition. This has to be done at this point because \jpf{} is not really executing an iteration, instead the iteration is simulated with the \textit{SparkIterativeChoiceGenerator}, which will cause the path conditions to be solved after the method finishes and the engine is set to backtrack to the latest point (most likely the point where the \textit{SparkIterativeChoiceGenerator} was registered), hence missing interconnection between the iterations. Including this conditions ensure that the right path in the symbolic execution tree is taken.
+
+Lastly, the output expression of the method is stored in the choice generator along with the current path condition. This will serve as an input for a subsequent iteration in case the maximum number of iterations has not been reached yet.
+
+\TUsubsubsection{\textit{flatMap}}
+
+% Define block styles
+\tikzstyle{block} = [rectangle, draw, fill=white, align=center, minimum height=4em, minimum width=3em, drop shadow]
+\tikzstyle{invisible-block} = [rectangle, draw=none, fill=none, align=center, minimum height=3em, minimum width=3em]
+\tikzstyle{triangle} = [isosceles triangle, draw, fill=white, align=center, shape border rotate=-180, minimum height=3em, minimum width=2.5cm, drop shadow]
+\tikzstyle{line} = [draw, -{>[length=2mm, width=1mm]}]
+\begin{figure}[t]
+	\centering
+	\begin{tikzpicture}[node distance=2cm, auto]
+	% Place nodes	
+	\node [invisible-block] (INIT) {...};
+	\node [triangle, right of=INIT, node distance=5.5cm] (FLATMAP) {\textit{flatMap}};
+	\node [block, right of=FLATMAP] at (FLATMAP.right corner) (CG1) {$CG^I$};
+	\node [block, right of=FLATMAP] at (FLATMAP.left corner) (CG2) {$CG^{N}$}; 
+	\node [invisible-block, right of=CG1, node distance=4cm] at (CG1.north east) (SCN11) {...};
+	\node [invisible-block, right of=CG1, node distance=4cm] at (CG1.20) (SCN12) {...};
+	\node [invisible-block, right of=CG1, node distance=4cm] at (CG1.south east) (SCN13) {...};
+	\node [invisible-block, right of=CG2, node distance=4cm] at (CG2.north east) (SCN21) {...};
+	\node [invisible-block, right of=CG2, node distance=4cm] at (CG2.20) (SCN22) {...};
+	\node [invisible-block, right of=CG2, node distance=4cm] at (CG2.south east) (SCN23) {...};
+	
+	% Draw edges
+	\path [line] (INIT) -- node[]{\footnotesize $SYM\_EXPR$}(FLATMAP.apex);
+	\path [line] (FLATMAP.right corner) -- node[below=1.1cm]{...} (CG1);
+	\path [line] (FLATMAP.left corner) -- (CG2);
+	
+	\path [line] (CG1.north east) -- node[]{\footnotesize $SYM\_EXPR^{I\_I}$}(SCN11);
+	\path [line] (CG1.20) -- node[below=1mm]{...} node[]{\footnotesize $SYM\_EXPR^{I\_II}$}(SCN12);
+	\path [line] (CG1.south east) -- node[]{\footnotesize $SYM\_EXPR^{I\_M}$}(SCN13);
+	
+	\path [line] (CG2.north east) -- node[]{\footnotesize $SYM\_EXPR^{N\_I}$}(SCN21);
+	\path [line] (CG2.20) -- node[below=1mm]{...} node[]{\footnotesize $SYM\_EXPR^{N\_II}$}(SCN22);
+	\path [line] (CG2.south east) -- node[]{\footnotesize $SYM\_EXPR^{N\_P}$}(SCN23);
+	
+	
+	\end{tikzpicture}
+	\caption[Diagram of the \textit{flatMap} Strategy]{Diagram of the \textit{flatMap} strategy. The input parameter is initialized to the symbolic expression percolated by the previous Spark operation if there is any, otherwise, a new symbolic expression is used instead. The output value percolated to the following functions is taken from a special choice generator registered when the \textit{flatMap} transformation has finished executing. The choice generator contains all the different elements contained in the collection. Every path taken during the \textit{flatMap} transformation registers a new choice generator with all possible values returned in that particular path.}
+	\label{fig:strategies:flatMap}
+\end{figure}
+
+The \textit{flatMap} transformation behaves similarly to the \textit{map} action, the only difference is that the function passed to the \textit{flatMap} has a collection of elements as an output value instead of a single element. These elements could have undergone different transformations even though they are returned in the same collection. One example of this behavior can be seen in Listing~\ref{lst:strategies:java-spark-flatmap}. Here, two different iterable collections are returned, one contains two elements resulting from two different manipulations of the initial input, while the second contains only one element with another manipulation different from the other two. Figure~\ref{fig:strategies:flatMap} depicts the symbolic execution of a \textit{flatMap} transformation according to the flatMap strategy; it shows how each path taken inside the passed function ends up in the registration of a new choice generator whose options are the possible symbolic expressions in the returned collection.
+
+\begin{lstlisting}[
+language=Java,
+caption={[FlatMap Example] A trivial example of the \textit{flatMap} transformation. It shows how the returned iterable can have elements that have undergone different transformations.},
+float=h,
+label=lst:strategies:java-spark-flatmap
+]
+numbers.flatMap(t -> {				
+if(t > 2) return Arrays.asList(t*2, t*3).iterator();
+else return Arrays.asList(t*4).iterator();				
+});
+\end{lstlisting}
+
+\textit{Pre-processing}
+
+The pre-processing phase is identical to the pre-processing phase of the filter and map strategies. Again, the handling of the input parameters of the passed function is carried out in the same way because the passed functions have the same number of input parameters, hence their stack frame behaves the same. However, the function passed to a \textit{flatMap} transformation implements the \texttt{FlatMapFunction} interface, which differs from the \texttt{Function} interface, used by the other two transformations, by returning an the iterator of a collection instead.
+
+\textit{Post-processing}
+
+The post-processing phase of this strategy behaves quite differently from all the other strategies so far. The idea would be to obtain all the different symbolic expressions inside the iterable object returned by the function and use each of them to feed subsequent Spark operations. However, the problem here lies in the change of the cardinality of the possible outcomes; so far we have had always the scenario of one input producing exactly one output, but now one input could potentially imply several outputs.
+
+For this purpose, the strategy relies on how the mocked up \textit{flatMap} transformation is implemented in \texttt{JavaRDD} class. In this implementation, the returned iterable is completely traversed using the \textit{next} method, forcing the execution to bring each element of the collection into the stack frame of the \textit{flatMap} method. This implementation does not deviate starkly from the original \textit{flatMap} operation given that in the case of the regular Spark library, the whole iterator is explored to build a new \acrshort{acr:rdd}.
+
+Considering how the implementation behaves, the post-processing phase waits until the passed function exits and then checks for an \texttt{invokevirtual} instruction invoking the \textit{next} method. Once detected, the respective value is taken from the stack frame and added to a list of output values in the strategy. This list is filled up with every element in the iterator.
+
+Lastly, when the \textit{flatMap} transformation exits, the strategy register a new custom-made choice generator whose possible values are the collected output values. Registering a choice generator at this point ensures that, after backtracking, a new option from the collection will be chosen exactly at the end of the \textit{flatMap} transformation. The selected value will be used as input for any subsequent Spark operations and the analysis will continue accordingly.
+
+The choice generator used in this scenario is called \texttt{SparkMultipleOutputChoiceGenerator}; it extends the \texttt{IntIntervalGenerator} of the \jpf{}
+core. It contains a list of symbolic expressions representing the different manipulations of the input value and uses the integer range to select one of this options every time a backtrack occurs. The range is defined between zero and the size of the list minus one.

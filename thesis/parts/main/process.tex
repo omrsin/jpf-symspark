@@ -1,0 +1,160 @@
+\TUsection{Conceptual Process}
+\label{sec:conceptual-process}
+
+% Mention the structure of spark programs (series of transformations culminating in an action)
+
+% Mention that RDD transformations themselves are not the targets of the analysis rather the invocation of the passed functions as arguments
+
+% Create a diagram with a chain of transformations and the potential changes in the input and how this operations can include conditionals
+
+% Mention the special case of filters that are conditionals by themselves
+
+% Mention the special case of flatMap and their increased cardinality in the output
+
+Following these four steps, the symbolic execution of a Spark program, using \spf{} as the underlying analysis framework, is represented by the state diagram depicted in Figure~\ref{fig:logic:state-diagram}. Here we consider how a black-box analysis should proceed in order to reason about the execution flow of a Spark program and the control flow instructions that might occur in it.
+
+The starting point of the analysis consists in detecting that a Spark operation of interest is being executed; relevant operations can be defined by the user beforehand. Once this has happened, the next step is to prepare for the exact operation that was detected, for example, indicating what function was passed to the detected operation and prepare the \spf{} analysis to consider its input parameters as symbolic values. Generally, these two steps occur simultaneously but given their semantic differences in the process, it was important to highlight them as different states of the analysis.
+
+The real analysis begins once the passed function is invoked. The process is split into three stages: \textit{pre-processing}, \textit{analysis} and \textit{post-processing}. During the \textit{pre-processing} stage, we must ensure that the parameters passed to the function are correctly instantiated; for example, if a \textit{map} and a \textit{filter} transformations took place in that order, we must ensure that the input symbolic expression passed to the function executed by the \textit{filter} is the output of the function invoked by the \textit{map} transformation. This guarantees a coherent inter-methodical analysis. The subsequent stage is the core analysis, which proceeds in the same way as an analysis of a regular method in \spf{} would do. Lastly, during the \textit{post-processing} stage the framework makes all the necessary preparations to be able to continue the symbolic execution of subsequent Spark operations.
+
+Once the analysis of a Spark operation is done, the framework continues to explore the program. This can lead to the detection of another relevant Spark operation. Finally, once the execution has finished, \jpf{} will backtrack to any decision points defined by the \textit{Choice Generators}. These points always take place inside one of the functions passed to any Spark operation; this is why the framework has to re-establish a strategy corresponding the Spark operation containing the invoked function. The analysis continues as usual once the strategy has been re-established. After all choices have been explored, the execution terminates and the analysis provides an output.
+
+% Define block styles
+\tikzstyle{block} = [rectangle, draw, fill=white, align=center,rounded corners, minimum height=3em, minimum width=3em, drop shadow]
+\tikzstyle{line} = [draw, -{>[length=2mm, width=1mm]}]
+\begin{figure}[t]
+	\centering
+	\begin{tikzpicture}[node distance = 2.5cm, auto]
+	% Place nodes
+	\node [block, very thick] (DETECTSPARK) {\small Detect \\ \small Spark \\ \small Operation};
+	\node [block, right of=DETECTSPARK] (PREPARESTRATEGY) {\small Prepare \\ \small Strategy};	
+	\node [block, right of=PREPARESTRATEGY] (DETECTFUNC) {\small Detect \\ \small Function \\ \small Invocation};
+	\node [block, right of=DETECTFUNC] (PREPROC) {\small Pre-process};
+	\node [block, right of=PREPROC] (ANALYSIS) {\small Analyze};
+	\node [block, below of=ANALYSIS] (POSTPROC) {\small Post-process};
+	\node [block, right of=ANALYSIS] (BACKTRACK) {\small Backtrack};
+	\node [block, above of=BACKTRACK] (RESTABLISHSTRATEGY) {\small Re-establish \\ \small Strategy};
+	\node [block, right of=BACKTRACK, double distance=1pt] (TERMINATE) {\small Terminate \\ \small Execution};			
+	% Draw edges
+	\path [line, rounded corners] (DETECTSPARK) -- (PREPARESTRATEGY);
+	\path [line, rounded corners] (PREPARESTRATEGY) -- (DETECTFUNC);
+	\path [line, rounded corners] (DETECTFUNC) -- (PREPROC);
+	\path [line, rounded corners] (PREPROC) -- (ANALYSIS);
+	\path [line, rounded corners] (ANALYSIS) -- (POSTPROC);
+	\path [line, rounded corners] (POSTPROC) -| (BACKTRACK);
+	\path [line, rounded corners] (POSTPROC) -| (DETECTSPARK);
+	\path [line, rounded corners] (BACKTRACK) -- (RESTABLISHSTRATEGY);
+	\path [line, rounded corners] (RESTABLISHSTRATEGY) -| (ANALYSIS);
+	\path [line, rounded corners] (BACKTRACK) -- (TERMINATE);
+	\end{tikzpicture}
+	\caption[State Diagram of the Symbolic Execution Process of Spark Programs]{State diagram of the symbolic execution process of Spark programs.}
+	\label{fig:logic:state-diagram}
+\end{figure}
+
+\TUsection{Concrete Examples}
+\label{sec:logic:example}
+
+Word count~\cite{Dean2008} has become the de facto example used in studies related to big data frameworks and distributed processing. We present a modified version of the regular word count example that allows us to illustrate the use case of symbolic execution in Spark programs. The goal of the word count algorithm is to process a document or group of documents to determine how many times each word appeared in the analyzed data. The modification we introduce puts a restriction on the structure of the words that are counted; only words that begin with a certain prefix are considered in the algorithm. This modification permits the existence of multiple paths while still keeping the original notion of the word count example. 
+
+\begin{lstlisting}[
+language=Java,
+caption={[Selective Word Count Example] A modified version of the word count algorithm. Only words that begin with certain prefixes are taken into consideration.},
+float=h,
+label=lst:logic:word-count-example
+]
+JavaRDD<String> textFile = sc.textFile("hdfs://...");
+JavaPairRDD<String, Integer> counts = textFile
+	.flatMap(s -> Arrays.asList(s.split(" ")).iterator())
+	.filter(x -> x.startsWith("re") || x.startsWith("un") || x.startsWith("in")) /*# \label{lst:ln:logic:word-count-example:filter} #*/	
+	.mapToPair(word -> new Tuple2<>(word, 1))
+	.reduceByKey((a, b) -> a + b);	
+counts.saveAsTextFile("hdfs://...");
+\end{lstlisting}
+
+Listing~\ref{lst:logic:word-count-example} shows how the selective word count algorithm is implemented in Spark. The algorithm proceeds as expected; the document is split into composing words and later these words are grouped and counted. The only difference is introduced in line~\ref{lst:ln:logic:word-count-example:filter}, where an additional \textit{filter} transformation is included after the document has been split into words. This operation will filter out all words except those who begin with the ``re'', ``un'', and ``in'' prefixes. The only condition imposed on the structure of the input data is introduced by this action, hence it is only relevant to analyze the \textit{filter} transformation in order to determine all possible execution paths.
+
+Only two words would suffice to explore all the possible paths of the program; one that would start with the aforementioned prefixes and one that would not. However, in order to try out all the conditions in the disjunction, at least one word matching each prefix would be necessary. Matching each condition in the disjunction is necessary in those cases where the boolean expression defining the path condition has to be thoroughly evaluated. Figure~\ref{fig:logic:symbolic-spark-word-count-example} shows the symbolic execution tree of the selective word count algorithm. Note that this execution tree depicts an exhaustive exploration of the boolean expression, thus selecting the most simple satisfying word for each condition in the disjunctions (in this case, the prefix itself).
+
+\begin{figure}[t]
+	\[\xymatrix@C=0.3em @R=0.8em{ 
+		& & & & & \ar[dd]^<(0.4){x = V_{0}} filter & & \\
+		& & & & & & & \\
+		& & & & & \ar@{}[llllldddd]_<(0.2){true} \ar[llllldddd]
+		\ar@{}[lldddd]_<(0.2){true} \ar[lldddd]
+		\ar@{}[dddd]_<(0.2){true} \ar[dddd]
+		\txt{\small $~~V_{0}.startsWith(``re")$ \\ 
+			\small $\lor ~V_{0}.startsWith(``un")$ \\
+			\small $\lor ~V_{0}.startsWith(``in")$} 
+		\ar[rrdddd] \ar@{}[rrdddd]^<(0.2){false} & & \\
+		& & & & & & & \\
+		& & & & & & & \\
+		& & & & & & & \\
+		*+[F] \txt{\small $V_{0}.startsWith(``re")$} & & &
+		*+[F] \txt{\small $V_{0}.startsWith(``un")$} & & 
+		*+[F] \txt{\small $V_{0}.startsWith(``in")$} & &
+		*+[F] \txt{\small $~~\lnot(V_{0}.startsWith(``re")$ \\ 
+			\small $\lor ~V_{0}.startsWith(``un")$ \\
+			\small $\lor ~V_{0}.startsWith(``in"))$} \\
+		V_{0} = ``re" & & & V_{0} = ``un" & &  V_{0} = ``in" & & V_{0} = ``\_" \\
+	} \]
+	\caption[Symbolic Execution Tree of the Selective Word Count Example]{Symbolic execution tree corresponding to the Spark program shown in Listing~\ref{lst:logic:word-count-example}. An input file containing the words $``re",``un",``in"$ and $``\_"$ would suffice to explore all feasible paths in the program.}
+	\label{fig:logic:symbolic-spark-word-count-example}
+\end{figure}
+
+
+The selective word count algorithm is a good example to convey the usefulness of symbolic execution analyses in the context of big data programs. However, it is not capable of illustrating some particular considerations given the lack of connected constraints between operations. 
+
+The trivial example presented in Listing~\ref{lst:logic:example} depicts a simple Spark program with no purpose in itself. Nonetheless, this simple example allows us to better explain how the analysis will be carried out when several relevant operations are present in the program under test. The relevant Spark operations in this example are the \textit{map} and \textit{filter} transformations in lines~\ref{lst:ln:logic:example:map} and~\ref{lst:ln:logic:example:filter} respectively. All other operations related to Spark are not relevant.
+
+In this other example, the first operation detected during the analysis is the \textit{map} transformation in line~\ref{lst:ln:logic:example:map}. At this point, the analysis opts for a ``map'' strategy and prepares itself for the imminent invocation of the function passed to the \textit{map}. For convenience, all the functions in this example are depicted as lambda functions although anonymous or named classes would work as well. Once the function is invoked, the framework proceeds to the pre-processing stage, however, because no previous operations were executed, the initial input for the function is a trivial symbolic reference~($V_0$).
+
+During the symbolic execution of the function, we find that there is a branching instruction in line~\ref{lst:ln:logic:example:if}. This represents a decision point and, for this reason, a \textit{choice generator} is registered with two options: one where $V_0$ is greater than one and another where it is less than or equals to one. The control flow continues with one of the paths and stores the other for a later exploration. Given the nature of the \textit{map} transformation, the input parameter might suffer a certain transformation which, in turn, is the returned value as it is shown in line~\ref{lst:ln:logic:example:map-modifies}. During the post-processing of the operation, the symbolic expression $V_0 + 2$ is then set to be the input value of the immediate Spark operation, which in this case is a \textit{filter}. The \textit{filter} transformation is processed in a similar fashion except that in this case the input value used in its function is instantiated to whatever output generated the \textit{map} transformation. 
+
+\begin{lstlisting}[
+language=Java,
+caption={[Trivial Example to Illustrate the Symbolic Execution of Spark Programs] Trivial example to illustrate the symbolic execution of spark programs with several relevant operations. The program itself has no real purpose other than to serve as a good scenario to demonstrate inter and intra procedural conditions of the analysis.},
+float=t,
+label=lst:logic:example
+]
+List<Integer> numberList = Arrays.asList(1,2,3);
+JavaRDD<Integer> numbers = spark.parallelize(numberList);
+
+numbers.map(v1 -> { /*# \label{lst:ln:logic:example:map} #*/
+	if(v1 > 1) return v1; /*# \label{lst:ln:logic:example:if} #*/
+	else return v1+2; /*# \label{lst:ln:logic:example:map-modifies} #*/
+})
+.filter(v2 -> v2 > 2); /*# \label{lst:ln:logic:example:filter} #*/
+\end{lstlisting}
+
+The function passed to the \textit{filter} transformation returns a boolean that depends on the symbolic input value. Given the nature of this kind of instruction, \spf{} registers a \textit{choice generator} in order to explore the possible outcomes of evaluating the boolean condition. Again, one of the paths is chosen and the analysis continues. At this point, there are no more relevant Spark operations and the execution comes to an end, thus, triggering a backtrack to the last unexplored path. Finally, the analysis continues until there are no more unexplored paths left.
+
+To further illustrate the example, Figure~\ref{fig:logic:symbolic-spark-example} shows the symbolic execution tree of the program. One interesting aspect to note is that the results of the \textit{map} transformation are percolated to the subsequent Spark operations; such is the case of the rightmost subtree in the symbolic execution tree. 
+
+When observed in this way, the analysis of the program turns out to be similar to the sequential execution of the respective input functions of each of the Spark operations in the program. However, this is not always the case given that some operations have particular semantic implications, for example, \textit{flatMap} produces multiple symbolic outputs, hence, making it impossible to simply connect the function passed to a \textit{flatMap} as it is, to any following operation.
+
+After the analysis is done, the module can solve the resulting path conditions and obtain a representative value in the range to produce a reduced input dataset that is able to offer full path coverage of the program.
+
+
+\begin{figure}[t]
+	\[\xymatrix@C=0.3em @R=0.8em{ 
+		& & & \ar[dd]^<(0.4){v1 = V_{0}} map & & & & \\
+		& & & & & & & \\
+		& & & \ar@{}[lldd]_<(0.2){true} \ar@{}[lldd]^>(0.5){V_{0}} \ar[lldd] V_{0} > 1 \ar[rrdd] \ar@{}[rrdd]_>(0.5){V_{0} + 2} \ar@{}[rrdd]^<(0.2){false} & & & & \\
+		& & & & & & & \\
+		& \ar[dd]^<(0.3){v2 = V_{0}} filter & & & & \ar[dd]^<(0.3){v2 = V_{0} + 2} filter & \\
+		& & & & & & & \\
+		& \ar@{}[ldd]_<(0.2){true} \ar[ldd] V_{0} > 2 \ar[rdd] \ar@{}[rdd]^<(0.2){false} & & & & \ar@{}[ldd]_<(0.2){true} \ar[ldd] V_{0} + 2 > 2 \ar[rdd] \ar@{}[rdd]^<(0.2){false} & \\
+		& & & & & & & \\
+		*+[F] \txt{$~~~V_{0} > 1$ 
+			\\ $\land ~V_{0} > 2$} & & 
+		*+[F] \txt{$~~~V_{0} > 1$ 
+			\\ $\land ~V_{0} \leq 2$} & &
+		*+[F] \txt{$~~~~~~~~~V_{0} \leq 1$ 
+			\\ $\land ~V_{0} + 2 > 2$} & &
+		*+[F] \txt{$~~~~~~~~~V_{0} \leq 1$ 
+			\\ $\land ~V_{0} + 2 \leq 2$} \\
+		V_{0} = 3 & & V_{0} = 2 & & V_{0} = 1 & & V_{0} = 0 & 
+	} \]
+	\caption[Symbolic Execution Tree of a Trivial Spark Program]{Symbolic execution tree corresponding to the Spark program shown in Listing~\ref{lst:logic:example}. The input set $\{3,2,1,0\}$ represents a minimal input set that would explore all feasible paths in the program.}
+	\label{fig:logic:symbolic-spark-example}
+\end{figure}

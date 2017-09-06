@@ -1,0 +1,51 @@
+\TUsubsection{Instruction Factory}
+
+% Point out how the detection of Spark operations as well relies on the combinations of the Instruction Factory, the instruction class itself and Platform-specific validator classes.
+
+% Indicate that the only relevant instruction is INVOKEVIRTUAL
+
+% Show a comparison between how a code looks and how its compiled bytecode instruction looks
+
+The first step for carrying out the analysis is to identify when a Spark operation is being executed. Given that all relevant operations in the concrete \textit{JavaRDD} class are implemented as non-static methods, the bytecode instruction of interest is \textit{invokevirtual}. This instruction is in charge of dispatching Java methods, unless they are interface methods, static methods or some other special cases (\textit{invokeinterface}, \textit{invokestatic} and \textit{invokespecial} are used respectively)~\cite{Lindholm2014}.
+
+For this purpose, we implemented the \textit{SparkSymbolicInstructionFactory} class, which extends from the \textit{SymbolicInstructionFactory} class defined in the \spf{} module. The goal of this class is to solely intercept calls to the \textit{invokevirtual} bytecode instruction and validate if they intend to dispatch one of the Spark operations relevant to the analysis.
+
+Just to illustrate this situation better in the case of the Java implementation, let us assume that the \textit{filter} transformation is being called on an existing \acrshort{acr:rdd} such as
+
+\hspace*{1cm} \lstinline[language=Java,]|rdd.filter(...)|
+
+then, the corresponding bytecode will look like the following
+
+\hspace*{1cm} \lstinline[]|invokevirtual PATH/JavaRDD.filter:(PATH/Function;) PATH/JavaRDD;|
+
+with ``PATH'' representing the full package path where the classes or interfaces are located. The rest of the instruction represents the method name and the method descriptor; sufficient information for identifying the relevant operations. The function parameter was intentionally omitted because, although the passed parameter must implement the \textit{Function} interface, this can be done in several ways; being the two most common ways lambda expressions and anonymous classes. At this point, neither of this two approaches represent a difference when detecting the Spark operation, however, it will require special attention later on when detecting the invocation of the passed function.
+
+The instruction factory that we implemented, makes use of a validator, which is in charge of detecting the concrete method and class names that are particular for each Spark implementation. At the moment we only support the Java implementation, although the framework is flexible to support additional validators, for example, one that could detect the Scala implementation of Spark.
+
+Moreover, the user must define in a configuration file the method names of the operations of interest (e.g., map, filter) in order to indicate this type of methods should be analyzed. The method names must be defined in a \texttt{.jpf} file, in a similar fashion as \spf{}, under the key \texttt{spark.methods}; in the case of having multiple methods of interest, they must be separated with a semicolon.
+
+Once the method has been detected, the instruction factory issues a custom \texttt{INVOKEVIRTUAL} instruction to the \jpf{} core. This instruction indicates what should the \jpf{} virtual machine do when the method of interest is executed. In our case, we need to prepare for the subsequent execution of the function passed as a parameter to the Spark operation. To do this, we manipulate the \jpf{} configuration programatically in order to take advantage of the configuration properties used by \spf{} to define which methods are supposed to be analyzed by the symbolic engine.
+
+Again, let us assume this time that the \textit{filter} method above was executed in a class named \texttt{Main} (fully described in \texttt{com.test.Main}). Then, after detecting the \textit{filter} transformation, the configuration will contain one of the following entries in the \texttt{symbolic.method} key:
+
+\hspace*{1cm} \lstinline[]|symbolic.method=...;com.test.Main$1.call(sym)|  \hfill (1)
+
+or
+
+\hspace*{1cm} \lstinline[]|symbolic.method=...;com.test.Main.lambda$main$0(sym)| (java compiler) \\
+\hspace*{1cm} \lstinline[]|symbolic.method=...;com.test.Main.lambda$0(sym)| (eclipse compiler) \hfill (2)
+
+depending if the passed function was implemented as an anonymous class or a lambda expression. 
+
+The ``\texttt{\$1}'' in (1) points to the first anonymous class created inside \texttt{com.test.Main} (the qualified path for an anonymous class is always separated by a ``\texttt{\$}'' sign). The number is monotonically increasing according to how many anonymous classes have been created up to that point. It is important to note that the method \textit{call} indicated here corresponds to the implementation of the method \textit{call} defined in the \textit{Function} interface.
+
+In the case of (2), the method indicated corresponds to a static method defined by the Java compiler whenever a lambda expression is found. This method will invoke afterwards an anonymous class created on the fly which implements the \textit{call} method of the \textit{Function} interface. It is sufficient to indicate the first static method with the symbolic parameter given that it only forwards the execution to the \textit{call} method in the anonymous class. This solution came as a workaround for detecting lambda expressions, given that \spf{} does not provide any mechanism on its own to clearly specify the analysis of such methods. Same as in the case of anonymous classes, the number accompanying the method is monotonically increasing and depends on how many lambda expressions have been created thus far.
+
+It will be relevant later on, that the method marked to be symbolically executed by (1) will be invoked using \texttt{invokevirtual}, while the ones defined by (2) will be invoked using \texttt{invokestatic}. This will require the handling of the input and output parameters in a different way.
+
+The dynamic manipulation of the configuration properties makes it easier for the user to specify which methods are to be symbolically executed. Defining the methods before hand, as in the regular \spf{} approach, proves to be cumbersome, given that the method names corresponding to anonymous classes or lambda expressions are often elusive and even difficult to track.
+
+For further information on how anonymous functions and lambda expressions are compiled and represented in Java bytecode please refer to the Java Language Specification~\cite{Gosling2014}.
+
+%TODO: Include the detection of lambda expressions as a collaboration?
+

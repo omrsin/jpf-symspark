@@ -1,0 +1,47 @@
+% Deactivates the period at the end of each description
+\renewcommand*{\glspostdescription}{}
+
+% Creates the glossary
+\makeglossaries
+
+% % % % % % % % % % % % % % %
+%				    		%
+%	Definition of terms		%
+%					    	%
+% % % % % % % % % % % % % % %
+
+\newglossaryentry{gls:lineage}{
+	name={Lineage},
+	description={Lineage description},
+	text=lineage
+}
+
+% % % % % % % % % % % % % % %
+%				    		%
+%	Definition of symbols	%
+%					    	%
+% % % % % % % % % % % % % % %
+
+\newglossaryentry{symb:epsilon}{
+	name=$\varepsilon$,
+	description={Dehnung},
+	symbol=E
+	sort=epsilon, 
+	type=symbols
+}
+
+% % % % % % % % % % % % % % % % % % % % % % % % %
+%												%
+%	Deinition of abbreviations and accronyms	%
+%												%
+% % % % % % % % % % % % % % % % % % % % % % % % %
+
+% Command syntax: \newacronym{label}{Abbreviation}{Meaning}
+\newacronym{acr:api}{API}{Application Programming Interface}
+\newacronym{acr:cfg}{CFG}{Control Flow Graph}
+\newacronym{acr:hdfs}{HDFS}{Hadoop Distributed File System}
+\newacronym{acr:jpf}{JPF}{Java PathFinder}
+\newacronym{acr:jvm}{JVM}{Java Virtual Machine}
+\newacronym{acr:nasa}{NASA}{National Aeronautics and Space Administration}
+\newacronym{acr:rdd}{RDD}{Resilient Distributed Dataset}
+\newacronym{acr:spf}{SPF}{Symbolic PathFinder}

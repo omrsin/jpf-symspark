@@ -1,0 +1,54 @@
+\TUsubsection{Spark Library and JPF}
+
+When executing an analysis using \jpf{}, the whole program is run under an instrumented \acrshort{acr:jvm} that keeps track of the execution state of the program. \jpf{} considers every executed program statement, even if it is executed by third-party libraries or dependencies indirectly invoked by the system under test. These libraries must be included in the \jpf{}'s classpath (which is a different classpath than the normal Java classpath of the system under test) because otherwise \jpf{} will fail indicating that it is not able to find certain references during execution.
+
+On the other hand, Spark, as many other modern applications, depends on a constantly growing number of external libraries. To execute an analysis on a Spark program with \jpf{} one could include all these libraries and dependencies in the the \jpf{}'s classpath and let it handle all the invocations internally. However, this approach has several problems: First, the execution of more statements increases the workload and state space of \jpf{}. Second, some of Spark's operations handle native calls that, for example, deal with the way tasks are placed in the operating system; \jpf{} does not handle such native operations by default, which leads to the need of creating surrogate peers that mock the behavior of such calls. Lastly and more importantly, most of these operations are called in methods that are unrelated to the actions and transformations that are relevant to the symbolic execution, leading to an unnecessary overhead that does not provide any benefit.
+
+Because of all these reasons, including the Spark library and all its dependencies was not a reasonable approach. Instead, we decided to mock up the Spark library, in order to mimic some of the classes that participate in a Spark program. The idea is to minimize the number of external dependencies and native calls while at the same time replacing the implementations of methods irrelevant to the analyses with simplified versions of themselves. Listing~\ref{lst:module:java-spark-context} is an example of how a class that is irrelevant to the analysis is simplified. In the regular Spark library the \textit{JavaSparkContext} class triggers a lot of heavy processes, like initializing the whole Spark framework; now it is just reduced to empty or simple code blocks.
+
+%TODO: Include lines references in description
+\begin{lstlisting}[
+language=Java,
+caption={[Mocked JavaSparkContext] Mocked version of the \textit{JavaSparkContext} class. The methods are as simple as they could be while still maintaining the contract of the original class. Note that the classes \textit{SparkConf} and \textit{JavaRDD} are also mocked.},
+float=h,
+label=lst:module:java-spark-context
+]
+import java.util.Arrays;
+import java.util.List;
+import org.apache.spark.SparkConf;
+
+public class JavaSparkContext {	
+	public JavaSparkContext(SparkConf conf){}
+	public void stop() {}	
+	public void close() {}
+	public <T> JavaRDD<T> parallelize(List<T> list) {		
+		return new JavaRDD<T>(list);
+	}
+	public JavaRDD<String> textFile(String file) {
+		return new JavaRDD<String>(Arrays.asList(""));
+	}
+}
+\end{lstlisting}
+
+However, some of the methods invoked by the Spark library are relevant to the analysis. Such is the case of the methods defined in the \textit{JavaRDD} class and the rest of the classes in the \acrshort{acr:rdd} family. These methods include operations like \textit{filter}, \textit{map} and \textit{reduce}, that make use of the functions passed by the programmers. In these cases, the goal of the surrogate library is that the functions passed to the operations are invoked inside these methods so the analysis can be triggered following the usual \spf{} approach. Listing~\ref{lst:module:filter-javardd} shows an example of the mocked \textit{filter} method of the \textit{JavaRDD} class. The function passed to the \textit{filter} method is invoked with the first element of the \acrshort{acr:rdd} only and the returned value is the current RDD itself given that it does not affect the end result when using symbolic input parameters.
+
+Having effectively discarded irrelevant portions of the system under test by the means of the surrogate library, makes it simpler to identify the relevant Spark operations that have an impact on the analysis.
+
+%TODO: Include lines references in description
+\begin{lstlisting}[
+language=Java,
+caption={[Mocked \textit{filter} Method in the JavaRDD Class] Mocked filter method in the JavaRDD class. The function passed to the method is invoked. Note that the \textit{Function} interface is also mocked.},
+float=h,
+label=lst:module:filter-javardd
+]
+public JavaRDD<T> filter(Function<T,Boolean> f) {		
+	try {
+		f.call(list_t.get(0));
+	} catch (Exception e) {
+		e.printStackTrace();
+	}
+	return this;
+}
+\end{lstlisting}
+
+The surrogate Spark library is already included into the dependencies of the \textit{JPF-SymSpark} module and is never meant to be used outside the context of an analysis. Nevertheless, the implementation is not extensive, which might require further expansion as the different cases and programs require. Moreover, the library is bound to version 2.0.2 of the original Spark library, which poses a drawback in terms of consistency if the core behavior of Spark changes in future versions. More about this issue can be found in Section~\ref{sec:limitations}.

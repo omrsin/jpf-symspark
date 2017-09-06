@@ -1,0 +1,11 @@
+\TUchapter{Evaluation}
+
+This chapter presents the evaluation of \textit{JPF-SymSpark} in two dimensions: a qualitative appraisal of the overall tool and a quantitative performance assessment of iterative symbolic executions. Additionally, the chapter concludes with a discussion of the limitations of the tool and its processes. 
+
+The qualitative appraisal aims to contrast \textit{JPF-SymSpark} against a series of functional requirements of an ideal symbolic execution framework for Apache Spark. The performance assessment of the iterative symbolic executions explores the behavior of the iterative reduce strategy in order to highlight performance obstacles when choosing this execution approach. Lastly, the discussion on the limitations provides additional information on the constraints, for both the tool and the process, under the context of \jpf{}.
+
+%The next sections are structured as follows: First, the requirements for an ideal symbolic execution tool for Spark programs are enunciated. Next, \textit{JPF-SymSpark} is contrasted against each of the defined requirements in order to determine if they are met. Additionally, the performance evaluation of the iterative reduce strategy is presented. Finally, the limitations of \textit{JPF-SymSpark} and the whole \acrshort{acr:jpf} framework are discussed.
+
+\input{parts/evaluation/qualitative}
+\input{parts/evaluation/quantitative}
+\input{parts/evaluation/limitations}

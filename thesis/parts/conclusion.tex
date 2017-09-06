@@ -1,0 +1,76 @@
+\TUchapter{Conclusion}
+
+This chapter concludes the work done in this thesis. First, it summarizes the contributions of \textit{JPF-SymSpark} as well as the results of its evaluation. Next, it presents a revisited discussion about the aim and research questions defined at the beginning of this study. Finally, it points towards several improvements to \textit{JPF-SymSpark} and future work on this line of research.
+
+\TUsection{Summary}
+
+This study introduces \textit{JPF-SymSpark}, the first symbolic execution framework for Apache Spark programs. It is built as an extension of \acrfull{acr:jpf}, a state model checking tool for Java bytecode, and based upon \acrfull{acr:spf}, a generic symbolic execution module of \acrshort{acr:jpf}. The main goal of the tool is to generate reduced input datasets that offer full path coverage of the program under test. Such datasets can have several uses in the development process of a Spark application, for example, as input data for unit tests. 
+
+\textit{JPF-SymSpark} follows a process that is able to reason over the \acrshort{acr:rdd}'s API exposed by Spark. This API consists of a set of operations defined as higher-order functions that are applied to data collections. The tool is capable of correctly interconnecting the symbolic executions of all the relevant functions in a program under test while discarding any unnecessary overhead introduced by the internal Spark logic. This reasoning over the interrelation of Spark operations and the data flow among them is the most useful contribution of this work. To our knowledge, there has not been any study on the application of symbolic execution in big data frameworks.
+
+A twofold evaluation of \textit{JPF-SymSpark} is presented in this work: a qualitative appraisal of the overall tool and a quantitative assessment of iterative symbolic executions. The former consists in contrasting the tool against a series of functional requirements of an ideal symbolic execution framework for Apache Spark, while the latter explores the behavior of the iterative reduce strategy in order to highlight performance obstacles when choosing this execution approach. 
+
+In the sense of the qualitative appraisal, although \textit{JPF-SymSpark} fulfills the core requirements, the lack of support of symbolic data structures and partial support of symbolic String operations pose as major limitations to the usability of the framework. It is mandatory to improve the underlying symbolic execution framework given that the reasons for which most requirements are not met stem from inherent limitations of \spf{}. The quantitative assessment shows that cumulative symbolic variables translate into more complex path conditions resulting in poor time performance. However, higher numbers of unsatisfiable path conditions allow a faster exploration of the state space of the program under test, given that it is easier for the constraint solver to discard those conditions that are unsatisfiable. The most relevant conclusion of the evaluation is that symbolic constraint solvers pose as the main bottlenecks in terms of performance. Lastly, a discussion on the limitations of the tool and the process under the context of \jpf{} is presented in order to advise similar research interests on the advantages and disadvantages of the chosen supporting platforms.
+
+During the development of the tool, \spf{} presented unexpected behaviors when analyzing some programs. Most of these abnormal results were caused by common programming practices in Spark applications, for example, the use of anonymous classes and lambda expressions to represent the parameter functions passed to many of Spark's operations. The \spf{} extension was modified accordingly in order to cope with these scenarios. The modifications done to the \spf{} module are: the detection of synthetic bridge methods, the consistent ordering of String path conditions and improvements on the visitor pattern applied to symbolic constraints. Some of these modifications were included in a patch and submitted for revision to the \spf{} administrator. However, to the date this document was published they have not been included in the official source code.
+
+\TUsection{Aim and Research Questions Revisited}
+
+A revision of the aim and research questions defined at the beginning of this work provides an overall understanding of the lessons learned and the results obtained during the execution of this study.
+
+The aim of this work is to  determine if \textit{symbolic execution techniques can be used in the context of Apache Spark as a big data framework to generate reduced input datasets that enforce full path coverage}. \textit{JPF-SymSpark} serves as an example of the application of symbolic execution techniques used to generate such datasets in the context of Apache Spark. Nonetheless, the limitations of \spf{} as the underlying symbolic execution framework scope down the application of the technique to an unsubstantial group of use cases that do not represent the characteristics of most realistic Apache Spark programs. As mentioned earlier, the lack of support of symbolic data structures and symbolic Strings strongly reduces the usability of such a technique. Further improvements in \spf{} or newer symbolic execution frameworks would improve the applicability of the technique as well as the capacity for more thorough evaluations.
+
+The following answers correspond to the research questions stated as premises of this study:
+
+\begin{enumerate}
+	\item \textit{Is symbolic execution a suitable technique for analyzing programs in the context of Spark applications?} 
+	
+	Yes. As \textit{JPF-SymSpark} demonstrates, the technique can be used to analyze Apache Spark programs although an additional reasoning on the structure of the operations had to be included in order to produce any valuable result.
+	
+	\item \textit{What are the particular characteristics associated with the symbolic execution of a Spark program?}
+	
+	There are two particular characteristics that differentiate the symbolic execution of Spark programs from other programs. The first is that the control flow instructions of an application can be contained inside the functions that are passed as parameters to Spark operations. Such a situation requires path conditions and symbolic transformations to be percolated between Spark operations. The second characteristic is that some Spark operations, in particular aggregation functions, have control flow semantics defined intrinsically. One example is the \textit{reduce} action, that defines an iterative behavior and accumulates a value resulting from the application of the passed user-defined function. In a symbolic execution, this iterative behavior needs to be considered in order to control undesirable results, as is the case of the symbolic state explosion.
+	
+	\item \textit{Is there a symbolic execution framework that can be adapted to perform symbolic executions of Spark programs?}
+	
+	Spark provides several implementations for different programming languages, being the most common for the Scala and Java programming languages. Both of this languages compile to the \acrlong{acr:jvm}. There are only a few symbolic execution frameworks that can be applied to Java programs or their respective compiled bytecode versions. \spf{} is the most complete framework available and with the most amount of documentation.
+	
+	\item \textit{If it exists, what are the advantages and disadvantages of such a framework in the context of Spark applications?}
+	
+	\spf{} is a powerful framework that is able to replace the whole instruction set of the Java bytecode for its symbolic counterparts. A wide variety of symbolic operations for all the primitive types are supported as well as a subset of the operations defined for Strings. It takes care of the identification of branching instructions and, with the help of \jpf{}'s state generation engine, is capable of exploring the different paths. It also provides a convenient set of mechanisms to consult and manipulate the execution state if needed. This is particularly useful when percolating path conditions among Spark operations. 
+	
+	However, \spf{} does not support symbolic data structures and only supports symbolic Strings partially. This presents a major limitation given that most of the realistic Spark programs operate to a certain extent this type of data. Additionally, \spf{} has undergone several development iterations and its codebase starts to show hints of code decay. Code comments used as a communication mechanisms between developers, frequent code duplication and outdated examples prove to be serious obstacles for the further improvement of the tool.
+	
+\end{enumerate}
+
+\TUsection{Future Work}
+\label{sec:future}
+
+%TODO Consider this as a future improvement for a better evaluation
+%for this reason, it is futile to establish a performance metric given that there is no relevant comparable peer. Additionally, although there are some proposed benchmarks for Apache Spark and big data frameworks in general~\cite{Li2015,Pavlo2009,Wang2014}, they focus on the workload imposed to the platforms instead of offering a corpus of programs substantial enough to measure the applicability of the developed module.
+
+The next points represent some improvements and extensions to \acrlong{acr:spf} and \textit{JPF-SymSpark} that would broaden the scope of programs the tools can analyze.
+
+\textbf{Symbolic execution of data structures}
+
+As mentioned in Section~\ref{sec:limitations}, the limited support of symbolic data structures on \spf{} affected greatly the scope of \textit{JPF-SymSpark}. The use of data structures in Spark programs is a common practice as it is in object-oriented programming languages. Improving \spf{} to provide better mechanisms to handle and manipulate symbolic data structures would be the first step to eventually analyzing Spark operations defined over data structures.
+
+This will prove particularly useful in the many cases where \acrshort{acr:rdd}s are defined over tuples and when using the many pair-oriented operations that are characteristic for this kind of structures. One example of a frequently used operation is the \textit{reduceByKey} transformation, that takes pairs matching the same key and applies a reduce function to them.
+
+\textbf{Support more Spark operations}
+
+Giving support to additional Spark operations would improve the usability of the tool. Most of the operations that are not yet supported are implemented over \acrshort{acr:rdd}s defined over the \textit{Pair} object or other data structures. Hence, in order to support these operations, it is necessary to support symbolic data structures first. However, once this occurs, the processing logic of many of these operations resembles many of the already implemented strategies.
+
+Nevertheless, transformations like \textit{join}, \textit{union}, and \textit{intersection} would require new processing strategies given that these transformations work over two potentially symbolic \acrshort{acr:rdd}s, something that we do not contemplate in this work.
+
+\textbf{Provide a Java annotation for analyzing single methods}
+
+The initial approach of this work is to provide a blackbox analysis on Spark programs. Any guidance on how the analyses should proceed are communicated via the configuration properties that are defined beforehand for each analysis. However, in some cases, it could prove useful to provide the means to indicate in the source code which particular Spark operations should be considered in an analysis.
+
+\jpf{} offers a mechanism to introduce information relevant to an analysis directly in the source code of the program being analyzed through customized Java annotations. A new Java annotation can be created to mark which Spark operations ought to be symbolically executed. Moreover, complementary information about the data being processed could be provided, for example, a precondition that could be appended to any path condition found during the analysis. Although this will shift the tool to a whitebox approach, it will offer more flexibility for the users. 
+
+\textbf{Support Scala}
+
+Scala is a functional programming language that also adopts many object-oriented concepts~\cite{WebScala2017}. The Spark library was originally written in Scala, only supporting other programming languages like Java and Python later on. For this reason, Scala is the default language of choice when writing Spark programs. 
+
+By design, Scala is compiled to the \acrlong{acr:jvm} in order to take advantage of the portability and the long-time-tested stability of Java. Given that Scala works on the same set of bytecode instructions, it would be possible to use \jpf{} (and by extension \spf{} as well) to analyze Scala. However, there is no official documentation about \jpf{} supporting Scala, although it is often a topic of conversation in the official \jpf{} community. Being able to analyze Spark programs written in Scala will improve greatly the scope of the tool, although it would prove to be a daunting task. It will require first to ensure compatibility with \jpf{} and \spf{}, to later create the necessary mechanisms that would allow \textit{JPF-SymSpark} to support such programs.

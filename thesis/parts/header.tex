@@ -1,0 +1,187 @@
+\documentclass[parskip,a4,numbers=noenddot  %,twoside
+]{scrreprt}
+
+\usepackage{tustyle}
+\usepackage[main=english,ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{tudfonts}
+\usepackage{siunitx}
+\usepackage{booktabs}
+\usepackage{listings}					% Creates code listings
+\usepackage[markup=nocolor]{changes}	% Allows the possibility to strike text through
+\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+\usepackage{url}
+\usepackage{blindtext}
+\usepackage{setspace}
+\usepackage[format=plain,justification=centerlast]{caption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage[all]{xy} % Crates diagrams
+\usepackage{tikz} % Creates nicer diagrams
+\usetikzlibrary{shapes,arrows.meta,shadows}
+\usepackage{subcaption}
+\usepackage{pifont} % To add some extra symbols. In particular the x mark
+\usepackage{multirow}
+\usepackage{pgfplots} % For plots
+
+% Sets refrences so users can click and jump to the right sections
+\usepackage{hyperref}
+
+\usepackage[
+	nonumberlist, 			% No display of page numbers in the lists of abbreviations and symbols
+	nogroupskip, 			% No entries are grouped by initial letters and no additional vertical spaces are included when changing the initial letters
+	acronym, 				% Creates a list of acronyms and abbreviations
+	symbols,				% Creates a list of symbols
+	toc, 					% Entry in the table of contents for the lists of abbreviations and symbols
+	translate=babel 		% Translation of headings into German (if German is the main language of the document)
+]{glossaries}				% Package for creating lists of abbreviations and symbols
+
+% The bibliography is designed according to the desired options
+% For MiKTeX users (Biber):
+%\usepackage[backend=biber, style=numeric-comp, bibstyle=numeric, citestyle=numeric]{biblatex}
+% For TeXLive users (Bibtex):
+\usepackage[backend=bibtexu, style=numeric-comp, bibstyle=numeric, citestyle=numeric,firstinits=true]{biblatex}
+
+% % % % % % % % % % % % % % % % % % % % %
+%										%
+%	Package Settings					%
+%										%
+% % % % % % % % % % % % % % % % % % % % % 
+
+% Page margins
+\geometry{top=2.5cm, left=2.5cm, right=2.5cm, bottom=2cm}			
+\graphicspath{{img/}}	% Defines directories where \includegraphics looks for image files by default
+\sisetup{
+	exponent-product = \cdot, 			% Sets a period as a separator when using exponential
+	%	output-decimal-marker = {,},		% Use only if the default is a non-english context. Sets the comma as a decimal seprator (in English is a period)
+	per-mode = symbol,					% Sets fractions instead of negatives exponents
+	bracket-unit-denominator = false,	% Does not surround units in the denominator with parentheses
+	range-phrase = ~--~,				% Uses an en-dash for ranges whenever \SIrange or \numrange are used
+	number-unit-product = \text{~},		% Fixes the distance between a number and its unit
+	detect-all,							% This also takes into consideration changes in the font for numbers and units
+	%	list-final-separator = ~und~,		% Use only if the default is a non-english context. Translation
+	%	list-pair-separator = ~und~,		% Use only if the default is a non-english context. Translation
+}
+
+% Takes care of the coloring of internet and internal links
+%\hypersetup{
+%	colorlinks = true,		
+%	linkcolor = red,
+%	urlcolor = cyan,			% Text color for URLs
+%	citecolor = green,			% Text color for citations
+%	pdfborder = 1 0 1,			% Fixes the frame if one is used
+%	linkbordercolor = red,		% Frame color for references (white = transparent in white background)
+%	urlbordercolor = cyan,		% Frame color for URLs
+%	citebordercolor = green,	% Frame color for citations (white = transparent in white backgrounds)
+%	bookmarksopen = true,		% Determines whether or not the bookmark bar is expanded when the PDF is opened
+%	bookmarksnumbered = true,	% Determines whether the chapter numbers are accepted into the bookmark tree
+%}
+
+% Listings default configuration
+\lstset{
+	basicstyle = \small\ttfamily\color{black},
+	breaklines = true,
+	breakatwhitespace = true,
+	captionpos = b,
+	commentstyle = \color{brown},
+	escapeinside={/*\#}{\#*/},
+	float = t,
+	frame = lines,
+	framexbottommargin = 10pt,
+	framexleftmargin = 20pt,
+	framexrightmargin = 20pt,
+	framextopmargin = 10pt,
+	keywordstyle = \color{purple},
+	ndkeywordstyle = \color{green},
+	numbers = left,
+	numbersep = 10pt,
+	numberstyle = \color{gray},
+	rulecolor = \color{gray},
+	showstringspaces = false,
+	stringstyle = \color{blue},
+	tabsize = 2,
+	xleftmargin = .15\textwidth,
+	xrightmargin = .15\textwidth
+}
+
+% Changes the name of the list of listings
+\renewcommand{\lstlistlistingname}{List of \lstlistingname s}
+
+% Sets how the captions for listings are displayed
+\DeclareCaptionFormat{listing}{%
+	\parbox{\textwidth-.3\textwidth+40pt}{\centerlast #1#2#3}%
+}
+\captionsetup[lstlisting]{format=listing,margin={.15\textwidth-20pt,0pt}}
+
+% % % % % % % % % % % % % % % % % % % % %
+%										%
+% 	Bibliography Settings				%
+%										%
+% % % % % % % % % % % % % % % % % % % % % 
+
+% Loads the bibliography references from the current working directory
+\addbibresource{bibliography,webresources}		
+\ExecuteBibliographyOptions{
+	url = false,
+	%	dashed=false		
+	bibencoding=utf8,	% If .bib is in utf8, otherwise ascii
+	bibwarn=true, 		% Warning if the bib data is corrupt
+	sorting=nyt 		% Issues the entries in the bibliography in the order in which they were cited
+}
+
+% Bibliography settings for the german language
+%\DefineBibliographyStrings{ngerman}{
+%	bibliography = {Literaturverzeichnis},	% Sets the heading of the bibliography
+%	urlseen      = {Zugriff\addcolon}		% Changes the label "besucht am" of URL sources to"Zugriff:"
+%}
+
+% In the bibliography, the representation of the author names follows the surname, first name format. (depending on the style, this must be adapted to get the effect, see: http://projekte.dante.de/DanteFAQ/BiblatexRegisterAutoren)
+\DeclareNameAlias{default}{last-first}
+% Sets the surname of the authors in capital letters
+\renewcommand*{\mkbibnamelast}[1]{\textsc{#1}}		
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
+%												        %
+%	New definitions and changes to existing commands	%
+%														%
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+
+% Re-definition of the itemize environment to reduce the gaps between bullet points
+\let\olditemize\itemize
+\renewcommand{\itemize}{
+	\olditemize
+	\itemsep4pt
+}
+
+% Re-definition of the enumerate environment to reduce the gaps between numbers and content
+\let\oldenumerate\enumerate
+\renewcommand{\enumerate}{
+	\oldenumerate
+	\itemsep4pt
+}
+
+% Use only if the default is a non-english context. Replaces the abbreviation for images to "Abb." in the german language
+%\addto\extrasngerman{\def\figureautorefname{Abb.}}							
+
+% Use only if the default is a non-english context. Replaces the abbreviation for tables to "Tab." in the german language
+%\addto\extrasngerman{\def\tableautorefname{Tab.}}							
+
+% Loads the two-color identable (Uncomment if necessary)
+%\input{parts/indentbar}
+
+% Definition of the bibeinzug environment for manually creating entries in the bibliography
+\newenvironment{bibeinzug}{\hangindent=1cm}{\par}
+
+% Definition of the bibzahl command for manually creating a numbered entry in the bibliography
+\newcommand{\bibzahl}[2] {
+\begin{tabular}{p{0.75cm}p{\textwidth-1.5cm}}
+	[#1] &#2
+\end{tabular}
+}
+
+% Definition of aliases for long, repetive commands
+\newcommand{\jpf}{\acrshort{acr:jpf}}
+\newcommand{\spf}{\acrshort{acr:spf}}
+
+% Defines the comand to create an x mark
+\newcommand{\xmark}{\ding{55}}%

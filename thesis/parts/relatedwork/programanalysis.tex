@@ -1,0 +1,176 @@
+\TUsection{Program Analysis}
+\label{sec:program-analysis}
+
+%(Coming from Finite Models.~\cite{BookPezze2008})
+
+%(Program Analysis) Conventional program testing is weak at detecting program faults that cause failures only rarely or only under conditions that are difficult to control. For example, conventional programming testing is not an effective way to find race conditions between concurrent threads that interfere only in small critical sections, or to detect memory access faults that only occasionally corrupt critical data structures. These faults lead to failures that are sparsely scattered in a large space of possible program behaviors, and are difficult to detect by sampling, but can be detected by program analyses that fold the enormous program state space down to a more manageable representation.~\cite{BookPezze2008}
+
+%(Model Checking, why should we use it?)
+
+%(Model) A model is a representation that is simple than the artifact it represents but preserves (or at least approximates) some important attributes of the actual artifact.~\cite{BookPezze2008}
+
+%(Models summary) Models play many of the same roles in software development as in engineering of other kinds of artifacts. Models must be much simpler than the artifacts they describe, but must preserve enough essential detail to be useful in making choices. For models of software execution, this means that a model must abstract away enough detail to represent the potentially infinite set of program executions states by a finite and suitably compact set of model classes. ...Some models, like CFG, can be extracted from programs. The key trade-off for these extracted models is precision versus the cost of producing and storing the model.~\cite{BookPezze2008}
+
+%(Related to finite abstractions in model checking and the state space) 
+%a single program execution can be viewed as a sequence of states alternating with actions (e.g., machine operations). The possible behavior of a program are a set of such sequences. If we abstract from the physical limits of a particular machine, for all but the most trivial programs the set of possible execution sequences is infinite. That whole set of states and transitions is called the state space of the program. Models of program executions are just abstractions of that space.~\cite{BookPezze2008}
+
+%(State and transitions)
+%A transition from one state node ``a'' to another state node ``b'' denotes the possibility that a concrete program state corresponding to ``a'' can be followed immediately by a concrete program state corresponding to ``b''. Usually we label the edge to indicate a program operation, condition, or event associated with the transition. We may label transitions with both an external event or a condition (what must happen or be true for the program to make a corresponding state change) and with a program operation that can be thought of as a ``response'' to the event. Such finite state machine with \textit{event/response} labels on transitions is called a Mealy machine.~\cite{BookPezze2008}
+
+%(About properties of model themselves, how correct they are) There are three kinds of correctness relations that we may reason about with respect to finite state machine models. The first is the internal properties, such as completeness and determinism. Second, the possible executions of a model, described by paths through the FSM, may satisfy (or not) some desired property. Third, the finite state machine model should accurately represent possible behaviors of the program.~\cite{BookPezze2008}
+
+Ensuring the quality and correctness of programs is a key aspect of the software development process. A wide variety of techniques are used to achieve this purpose, among which software testing is one of the most common. However, testing techniques are not always suitable; in particular, they are not effective detecting the causes of spurious failures that occur only under conditions that are hard to control or replicate (e.g., race conditions). Program analysis techniques result in a better approach in those scenarios because they reason about a model representing the system under test, thus, scoping down the program only to the relevant pieces that are used to verify a desired property.
+
+In general, a model is an abstraction that preserves some selected attributes of an object or concept. They are used in many disciplines as mechanisms to improve communication and support decision making. Models that represent the execution of a program have to discard the unnecessary aspects of it while still preserving the capacity of explaining the potentially infinite execution states in a finite, compact, meaningful, and general view~\cite{BookPezze2008}.
+
+Programs can be modeled as a series of \textit{states} that can be reached after certain actions occur, for instance, an action can be thought as the execution of code statements. In consequence, the \textit{behavior} of a program can be defined as a sequence of states (or \textit{path}) ranging from the beginning of the execution to its termination.
+
+\textit{\acrfullpl{acr:cfg}} are one example of such models, where nodes represent program statements and directed edges define the control flow relationship between them~\cite{Allen1970}. Listing~\ref{lst:program-analysis:cfg} and Figure \ref{fig:program-analysis:cfg} show a simple linear search algorithm and its corresponding \acrlong{acr:cfg} respectively. \acrshort{acr:cfg}s serve as a starting point for different types of analyses, for example, data flow analysis where each node is augmented with information related to data accesses in order to verify that a variable is always initialized before it is read. 
+
+\begin{lstlisting}[
+language=Java,
+caption={[Linear Search Algorithm] Linear search algorithm written in Java to illustrate the creation of a Control Flow Graph. If the element is contained in the array, the corresponding index is returned, otherwise -1 is returned.},
+float=h,
+label=lst:program-analysis:cfg
+]
+public static int search(int[] a, int elem) {
+  for(int i = 0; i < a.length; i++) {
+    if(a[i] == elem) {
+      return i;
+    }
+  }
+  return -1;
+}
+\end{lstlisting}
+
+% Define block styles
+\tikzstyle{block} = [rectangle, draw, fill=white, rounded corners, minimum height=2em, drop shadow]
+\tikzstyle{block-double} = [rectangle, draw, fill=white, text centered, rounded corners, minimum height=2em, drop shadow, double distance=1pt]
+\tikzstyle{line} = [draw, -{>[length=2mm, width=1mm]}]
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance = 2cm, auto]
+	% Place nodes
+	\node [block] (INIT) {\textbf{public static int} search(\textbf{int}[] a, \textbf{int} elem)};	
+	\node [block, below of=INIT] (FORCOND) {i<a.length(){;}};	
+	\node [block, left of=FORCOND, node distance=3cm] (FORINIT) {\textbf{for}(\textbf{int} i=0{;}};
+	\node [block, right of=FORCOND, node distance=3cm] (FORACCUM) {i++{;})};	
+	\node [block, below of=FORCOND] (IF) {\textbf{if}(a[i]==elem)};	
+	\node [block-double, below of=IF] (IFRETURN) {\textbf{return} i{;}};	
+	\node [block-double, left of=IFRETURN, node distance=3cm] (RETURN) {\textbf{return} -1{;}};
+	% Draw edges
+	\path [line, rounded corners] (INIT) -- (-5,0) |- (FORINIT.west);
+	\path [line] (FORINIT) -- (FORCOND);
+	\path [line] (FORCOND) -- node[near start]{\textit{true}}(IF);
+	\path [line] (IF) -- node[near start]{\textit{true}}(IFRETURN);
+	\path [line, rounded corners] (IF) -| node[near start]{\textit{false}}(FORACCUM.south);
+	\path [line] (FORACCUM) -- (FORCOND);
+	\path [line, rounded corners] (FORCOND.225) -- node[left]{\textit{false}}(-0.4,-3) -| (RETURN.north);
+\end{tikzpicture}
+\caption[Control Flow Graph of the Linear Search Algorithm]{Control Flow Graph corresponding to the linear search algorithm shown in Listing~\ref{lst:program-analysis:cfg}. The entry node is the signature of the method, while end nodes, represented by a double frame, contain the return statements that put an end to the execution. The \textit{for} loop instruction was split into its composing statements to better display how the control flow works for this instruction.}
+\label{fig:program-analysis:cfg}
+\end{figure}
+
+Models like \acrshort{acr:cfg}s are useful when reasoning about properties related to the structure of the system under test. However, analyses of this kind often over-approximate on their conclusions given that they lack the means for conclusively asserting properties that depend on the execution of the program. In contrast, \textit{explicit state model checking} and \textit{symbolic execution} techniques reason about the properties of a program when this is being executed. The following sections discuss these two concepts in more detail.
+
+%(Finite State Verificatio) Finite State Verification borrows techniques from symbolic execution and formal verification, but like control and data flow analysis, applies them to models that abstract the potentially infinite state space of a program behavior into finite representations.~\cite{BookPezze2008}. Systematically exploring an enormous space of possible programs states, the challenge is to construct a suitable model of software that can be analyzed with reasonable expenditure of human and computational resources, captures enough significant detail for verification to succeed, and can be shown to be consistent with actual software.
+
+%(State Space Explosion)
+
+\TUsubsection{Explicit State Model Checking}
+\label{subsec:explicit-state-model-checking}
+
+This technique, also known as Finite State Verification, consists of systematically exploring the potentially huge explicit state space of a program in order to understand all possible executions~\cite{Clarke2000}. States are determined, for example, by all the possible values a variable or an expression can take during the execution of the system under test or by all possible interleavings that can result from the execution of a concurrent program. This technique is used together with temporal logic predicates that assert the validity of a reached state~\cite{Pnueli1977}. 
+
+As expected, the number of states for non-trivial programs grows exponentially; what is known as \textit{state space explosion} problem. This condition poses several limitations to the practical use of the technique given that computational resources are quickly exhausted and timely conclusions are not feasible. Hence, the challenge relies on the reduction of the state space of the execution while still maintaining a full semantic correspondence between the model and the program, at least in terms of the property that is validated.
+
+% TODO: Missing references about Partial Order Reduction
+Strategies to make the state space smaller are frequently used when generating and exploring a model as an effort to make the technique applicable. For example, \textit{Partial Order Reduction} is a strategy that aims to reduce the number of states to be explored by detecting transitions resulting from concurrent operations that lead to equivalent states, making it necessary to explore such paths only once~\cite{Godefroid1996,Peled1993,Valmari1991}. 
+
+Nonetheless, explicit state model checking proves itself useful because of its capacity to easily detect faults that would have been challenging, if not impossible, to notice with traditional software testing techniques. In particular, it results useful for discovering faults that would occur rarely under very specific conditions that cannot be generalized. It is commonly used to validate critical and concurrent systems and is often combined with other testing techniques.
+
+% TODO: Maybe mention that, in further sections, concrete examples of this technique are shown (JPF)
+
+\TUsubsection{Symbolic Execution}
+\label{subsec:symbolic-execution}
+
+%(Definition) Symbolic execution builds predicates that characterize the conditions under which execution paths can be taken and the effect of the execution on program state. Extracting predicates through symbolic execution is the essential bridge from complexity of program behavior to the simpler and more orderly world of logic. It finds important applications in program analysis, in generating test data, and in formal verification (proof) of program correctness.~\cite{BookPezze2008}.
+
+%(Another definition) Symbolic execution is a bridge from an operational view of program execution to logical and mathematical statements.~\cite{BookPezze2008}.
+
+%(The basis of symbolic execution relies in tracing execution with symbolic values and expressions).~\cite{BookPezze2008}. When tracing execution with concrete values, it is clear enough what to do with a branch statement, for example, an if or while test: The test predicate is evaluated with the current values, and the appropriate branch is taken. If the values bound to variables are symbolic expressions, however, both the True and False outcomes of the decision may be possible. Execution can be traced through the branch in either direction, and execution of the test is interpreted as adding a constraint to the record outcome.~\cite{BookPezze2008}.
+
+%(Satisfying the predicate) One can think of ``satisfying'' the predicate by finding concrete values for the symbolic variables that make it evaluate to True; this corresponds to finding data values that would force execution of a program path. If no such satisfying values are possible, then that execution path cannot be executed with any data values; we say it is an \textbf{infeasible} path.~\cite{BookPezze2008}.
+
+% (Usefulness) Conditions under which a particular control flow path is taken can be determined through symbolic execution. This is useful for identifying infeasible program paths (those that can never be taken) and paths that could be taken when they should not. It is fundamental to generating test data to execute particular parts and paths in a program.~\cite{BookPezze2008}.
+
+% (Equivalence classes for data generation)
+
+%(Show example)
+
+% Mention pre-conditions, post-conditions, loop-invariants and assertions in general as means to help symbolic executions reduce the state space and reason even further into the execution of the program
+
+% (Use cases --- not so interesting) Symbolic execution is a fundamental technique that finds many different applications. Test data generators use symbolic execution to derive constraint on input data. Formal verification systems combine symbolic execution to derive logical predicates with theorem provers to prove them. Many development tools use symbolic execution techniques to perform or check program transformations, for example, unrolling a loop for performance or refactoring source code.~\cite{BookPezze2008}. 
+
+%(Mention the necessity of solvers and also current tendencies in the field)
+
+The first discussions of symbolic execution date several decades back~\cite{Hoare1969,King1976}. The idea consists of executing a program using a set of ``symbolic'' input parameters in order to build logical predicates that characterize all possible executions. These symbolic parameters can be thought as mathematical variables, in contrast to what would be a concrete value. Throughout the execution, the symbolic values are operated, which generates more complex symbolic expressions. Moreover, control flow statements define logical predicates that could depend on symbolic expressions, bridging the representation of the program from its operational view to a series of logical expressions. %TODO Review this last sentece
+
+% TODO: Add Path Condition to the glossary, as well as equivalence classes, symbolic execution
+Conditional statements are trivial to evaluate when tracing the execution of a program with a concrete value; the branching conditions are simply evaluated and a path is chosen to proceed with the execution. However, if the branch condition depends on symbolic values, both paths corresponding to the \textit{true} and \textit{false} evaluation respectively are an option, hence, the execution continues to be traced through both branches. As a result, each execution path of the program is characterized by a sequence of predicates and how they were evaluated; also known as path condition.
+
+A path condition is satisfiable if there exists a group of concrete input values that makes its logical predicate hold, which means that these values can steer the execution of the program through that path. Whereas, if the path condition cannot be satisfied then it will be impossible for any concrete execution to follow that path, rendering the path unfeasible. Interestingly enough, each satisfiable path condition represents an equivalence class of concrete input values. 
+
+\begin{lstlisting}[
+language=Java,
+caption={[Trivial Program to Illustrate Symbolic Execution] Trivial program to illustrate how symbolic execution works.},
+float=h,
+label=lst:program-analysis:symbolic
+]
+public void trivial(boolean a, int b, boolean c) {
+  int x = 0, y = 0, z = b + 1;
+  if (a) { x = -1; }
+  if (z > 5) {
+    if (!a && c) { y = -1; }
+  }
+  assert x + y != 0; /*# \label{lst:ln:symbolic:assertion} #*/
+}
+\end{lstlisting}
+
+Figure~\ref{fig:program-analysis:symbolic} shows the symbolic execution tree of the program in Listing~\ref{lst:program-analysis:symbolic}. The root node represents the input parameters as symbolic values while the intermediate nodes illustrate the control flow of the program evaluated on these symbolic parameters wherever possible. Each intermediate node branches into two options, each corresponding to the predicate evaluating to \textit{true} or \textit{false} respectively. Also, each branch is labeled with the executed statements following one of the evaluations. More importantly, the leaves collect the predicates that form the path condition for that particular execution. The left most leave in the dotted frame contains an unfeasible path condition given that the predicate cannot be satisfied. Moreover, the path conditions in the dashed frames define executions that will fail the assertion of line~\ref{lst:ln:symbolic:assertion}.
+
+\begin{figure}[t]
+\[\xymatrix@C=0.3em{
+	 & & & \ar[d]^{x = 0,~y = 0,~z = b_{0} + 1} \txt{\small $a = a_{0},b = b_{0}, c = c_{0}$} \\
+	 & & & \ar@{}[ld]_<(0.2){true} \ar[ld]^{x=-1} a_{0} \ar[rrd] \ar@{}[rrd]^<(0.2){false} \\
+	 & & \ar@{}[ld]_<(0.2){true} \ar[ld] b_{0} + 1 > 5 \ar[dd] \ar@{}[dd]^<(0.1){false} & & & \ar@{}[ld]_<(0.2){true} \ar[ld] b_{0} + 1 > 5 \ar[dd] \ar@{}[dd]^<(0.1){false} \\ 
+	 & \ar@{}[ld]_<(0.2){true} \ar@{.>}[ld]^>(0.5){y=-1} \neg a_{0} \land c_{0} \ar[d] \ar@{}[d]^<(0.2){false} & & & \ar@{}[ld]_<(0.2){true} \ar[ld]^>(0.5){y=-1} \neg a_{0} \land c_{0} \ar[d] \ar@{}[d]^<(0.2){false} & & & \\
+	 *+[F.] \txt{\footnotesize $~~~~~~~~~~~~~~~a_{0} \equiv true$ 
+	 \\ \footnotesize $\land ~b_{0}+1 > 5 \equiv true$ 
+	 \\ \footnotesize $\land ~~~~\neg a_{0} \land c_{0} \equiv true$} & 
+	 *+[F] \txt{\footnotesize $~~~~~~~~~~~~~~a_{0} \equiv true$ 
+	 \\ \footnotesize $\land ~b_{0}+1 > 5 \equiv true~~$ 
+	 \\ \footnotesize $\land ~~~~\neg a_{0} \land c_{0} \equiv false$} & 
+	 *+[F] \txt{\footnotesize $~~~~~~~~~~~~~~a_{0} \equiv true$ 
+	 \\ \footnotesize $\land ~b_{0}+1 > 5 \equiv false$
+	 \\ ~} & 
+	 *+[F] \txt{\footnotesize $~~~~~~~~~~~~~~~~~a_{0} \equiv false$ 
+	 \\ \footnotesize $\land ~b_{0}+1 > 5 \equiv true$ 
+	 \\ \footnotesize $~\land ~~~~\neg a_{0} \land c_{0} \equiv true ~$} &
+	 *+[F--] \txt{\footnotesize $~~~~~~~~~~~~~~~a_{0} \equiv false$ 
+	 \\ \footnotesize $\land ~b_{0}+1 > 5 \equiv true~~$ 
+	 \\ \footnotesize $\land ~~~~\neg a_{0} \land c_{0} \equiv false$} &
+	 *+[F--] \txt{\footnotesize $~~~~~~~~~~~~~~~a_{0} \equiv false$ 
+	 \\ \footnotesize $\land ~ b_{0}+1 > 5 \equiv false$
+ \\ ~}			
+} \]
+\caption[Symbolic Execution Tree of a Trivial Program]{Symbolic execution tree of the program presented in Listing~\ref{lst:program-analysis:symbolic}.}
+\label{fig:program-analysis:symbolic}
+\end{figure}
+
+Symbolic execution could be combined with pre-conditions, post-conditions, loop invariants and, in general, any assertion at any given point in the source code. Comparing path conditions against these validations help reasoning about the status of the execution, in particular when detecting faulty programs. Moreover, loop invariants are helpful when executing loops symbolically, given that in most cases loops lead to unbounded chains of logical predicates due to the inability to evaluate the stopping condition concretely.
+
+To determine if a path condition is satisfiable, symbolic execution tools make use of constraint solvers and theorem provers. Though having improved considerably in recent years, solvers and provers still represent the main bottlenecks for the application of symbolic execution in large scale programs~\cite{Cadar2013}. 
+
+Although full verification based on symbolic execution might be unfeasible, reduced domains and specific validations could benefit from its principles. For example, there are several applications for symbolic execution in program analysis; the most common are input data generation~\cite{Clarke1976}, test case generation~\cite{Cadar2008,Csallner,Godefroid2008,Visser2004a} and static detection of errors~\cite{Bush2000,Tomb2007}, among many others~\cite{Csallner2008,Siegel2006}.

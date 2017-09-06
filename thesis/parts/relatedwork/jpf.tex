@@ -1,0 +1,223 @@
+\TUsection{Java PathFinder}
+\label{sec:jpf}
+
+% (Definition of JPF) (verification, analysis and testing environment for Java, called Java PathFinder (JPF)) (JPF is a highly customizable execution environment for verification of Java™ bytecode programs)
+
+% (Java, Mention and reference it) THE Java® programming language is a general-purpose, concurrent, class-based, object-oriented language. It is designed to be simple enough that many programmers can achieve fluency in the language. The Java programming language is strongly and statically typed. This specification clearly distinguishes between the compile-time errors that can and must be detected at compile time, and those that occur at run time.
+
+%(JPF Motivation Why analyze code and in particular Java) We believe it is an attractive idea to develop a verification environment for Java for three reasons. First, Java is a modern language featuring important concepts such as object-orientation and multi-threading within one language. Second, Java is simple, for example compared to C++. Third, Java is compiled into bytecode, and hence, the analysis can be done at the bytecode level. This implies that such a tool can be applied to any language that can be translated into bytecode.
+
+%(Why Java --- It is well known that concurrent programs are non-trivial to construct, and with Java essen- tially giving the capability for anyone to write concurrent programs, we believe, a model checker for Java might have a bright future. In fact, one area where we believe it can have an immediate impact is in environments where Java is taught. Also because it is widely used.)
+
+%(Maybe not necessary but valuable to explain native calls --- The JVMJPF supports all Java bytecodes, hence any program written in pure Java can be analyzed. Unfortunately, not all Java programs consist of pure Java code—one often finds that certain methods are defined as being native to the operating system. When a Java program calls methods that have no corresponding bytecodes, then JPF cannot determine what the state of these code fragments will be and hence cannot handle programs that, for example, access the file system (user-defined class- loaders, file I/O operations, etc.), or communicate over a network, contains GUI code, etc. Fortunately, many native methods do not have side-effects and hence simple wrapper- methods can be written that translate the inputs and outputs to the native method, which then allow the original method to be called and all state changes to happen after returning from the call)
+
+%(With JPF we took the other route, we developed our own custom-made model checker that can execute all the bytecode instructions, and hence allow the whole of Java to be model checked. The model checker consists of our own Java Virtual Machine (JVMJPF) that executes the bytecodes and a search component that guides the execution. It is an explicit state model checker!!!)
+
+%(Features of JPF) (Explicit State, State Matching, Backtracking, Partial Order Reduction)
+
+%(States --- Specifically, each state consists of three components: information for each thread in the Java program, the static variables (in classes) and the dynamic variables (in objects) in the system. The information for each thread consists of a stack of frames, one for each method called, whereas the static and dynamic information consists of information about the locks for the classes/objects and the fields in the classes/object)
+
+%(State is a snapshot of the current execution status of the application (mostly thread and heap states), plus the execution history (path) that lead to this state. Every state has a unique id number. JPF-internally, State is encapsulated in the SystemState instance (almost, there is some execution history which is just kept by the JVM object). This includes three components:
+%KernelState - the application snapshot (threads, heap)
+%trail - the last Transition (execution history)
+%current and next ChoiceGenerator - the objects encapsulating the choice enumeration that produces different transitions (but not necessarily new states))
+
+%(Termination --- In order to ensure termination during explicit state model checking one must know when a state is revisited. It is common for a hashtable to be used to store states, which means an efficient hash function is required as well as fast state comparison.)
+
+%(A major design decision for JPF was to make it as modular and understandable to others as possible, but we sacrificed speed in the process—Spin is at least an order of magnitude faster than JPF.We believe this is a price worth paying in the long run.)
+
+%(Extension Points: Search strategies, Choice Generators, Listeners, Instruction Factories, Native Peers, Models, Publisher, consider presenting them as a list of concepts)
+
+Developed at \acrshort{acr:nasa}'s Ames Research Center~\cite{WebNASAAmes2017}, \acrfull{acr:jpf} is an execution environment for verification and analysis of Java bytecode programs~\cite{Visser2003,WebJPF2017}. Since its publication in the year 2000~\cite{Havelund2000}, \jpf{} has evolved from being a model translator to a fully fledged, highly customizable virtual machine capable of controlling and augmenting the execution of a program.
+
+Java is a widely known, general-purpose programming language with strong roots on concurrency support and object-oriented principles~\cite{Gosling2014}. Programs written in Java are compiled to the standardized instruction set of the \acrfull{acr:jvm}, known as Java bytecode. This process makes Java programs portable between architectures implementing the \acrshort{acr:jvm} specification. A \acrshort{acr:jvm} implementation serves as an interpreter of Java bytecode and allows the optimization and execution of the program tailored for the host platform~\cite{Lindholm2014}.
+
+\jpf{} focuses on Java mainly for three reasons: its wide adoption as a modern programming language, its simplicity in comparison to other high profile languages, and the flexibility in terms of bytecode analysis; potentially enabling the verification of any other language capable of being compiled into Java bytecode. Moreover, the non-trivial nature of concurrent programs makes them difficult to construct and debug. A model checker with the capacity of validating concurrent Java programs is crucial for ensuring correctness of mission-critical software, such as the ones required by \acrshort{acr:nasa}.
+
+In its core, \jpf{} is a \acrlong{acr:jvm} implemented in Java itself, comprised of several extensible components that dictate the verification strategy to be followed. The fact that \jpf{} is written in Java means that it is executed on a canonical \acrshort{acr:jvm}; in other words, a \acrshort{acr:jvm} on top of a \acrshort{acr:jvm}. 
+
+% Define block styles
+\tikzstyle{block} = [rectangle, draw, fill=white,text centered, rounded corners, drop shadow]
+\tikzstyle{textTop} = [below right, yshift=-0.2cm, xshift=0.1cm]
+\tikzstyle{longBlock} = [block, minimum height= 7cm, minimum width = 2cm, node distance=2.75cm]
+\tikzstyle{placeholder} = [rectangle, text centered, minimum height= 7cm, minimum width = 2cm, node distance=2.75cm]
+\tikzstyle{smallBlock} = [rectangle, draw, fill=white, text centered, drop shadow, text width=2cm, minimum height=1cm, node distance = 1.175cm]
+%\tikzstyle{block-double} = [rectangle, draw, fill=white, text centered, rounded corners, minimum height=2em, drop shadow, double distance=1pt]
+\tikzstyle{arrow}  = [draw, -{>[length=2mm, width=1mm]}]
+\tikzstyle{optional} = [draw, dashed]
+\tikzstyle{line} = [draw]
+
+\begin{figure}[t]
+\centering
+\footnotesize
+\begin{tikzpicture}[auto]
+	% Place nodes
+	\node [block, minimum height=10cm, minimum width=12cm] (HOSTJVM) {};
+	\node [textTop] at (HOSTJVM.north west) {\textbf{Host JVM}};
+	\node [block, left, minimum height=8.5cm, minimum width=11cm, xshift=-0.5cm, yshift=-0.25cm] at (HOSTJVM.east) (JPF) {};
+	\node [textTop] at (JPF.north west) {\textbf{JPF}};
+	
+	\node [longBlock, left, xshift=-0.5cm] at (JPF.east) (EXTENSIONS) {\txt{Module \\ Extensions}};
+	\node [placeholder, left of=EXTENSIONS] (PLACEHOLDER) {};
+	\node [longBlock, left of=PLACEHOLDER] (JPFCORE) {JPF Core};
+	
+	\node [smallBlock, below] at (PLACEHOLDER.north) (FACTORY) {Bytecode Factories};
+	\node [smallBlock, below of=FACTORY] (CHOICE) {Choice Generators};
+	\node [smallBlock, below of=CHOICE] (LISTENER) {Listeners};
+	\node [smallBlock, below of=LISTENER] (NATIVE) {Native Peers};
+	\node [smallBlock, below of=NATIVE] (PUBLISHER) {Publishers};
+	\node [smallBlock, below of=PUBLISHER] (SEARCH) {Search Strategies};
+	
+	\node [block, minimum height=2cm, minimum width=2cm] at (JPF.west) (APP) {\txt{\textbf{Program Under Test} \\ \textit{(bytecode)}}};
+	\node [block, minimum height=2cm, minimum width=2cm, right of=HOSTJVM, xshift=0.5cm] at (HOSTJVM.east) (REPORT) {Report};
+	
+	\node [smallBlock, below of=JPFCORE, yshift=-1cm] at (JPFCORE.south) (CONFIG) {Configuration};
+
+	% Draw edges
+	\path [arrow] (APP) -- (JPFCORE);
+	
+	\path [arrow] (JPFCORE.east) |- (FACTORY);
+	\path [arrow] (JPFCORE.east) |- (CHOICE);
+	\path [arrow] (JPFCORE.east) |- (LISTENER);
+	\path [arrow] (JPFCORE.east) |- (NATIVE);
+	\path [arrow] (JPFCORE.east) |- (PUBLISHER);
+	\path [arrow] (JPFCORE.east) |- (SEARCH);
+	
+	\path [optional] (EXTENSIONS.west) |- (FACTORY);
+	\path [optional] (EXTENSIONS.west) |- (CHOICE);
+	\path [optional] (EXTENSIONS.west) |- (LISTENER);
+	\path [optional] (EXTENSIONS.west) |- (NATIVE);
+	\path [optional] (EXTENSIONS.west) |- (PUBLISHER);
+	\path [optional] (EXTENSIONS.west) |- (SEARCH);
+	
+	\path [line, rounded corners] (APP.292.5) |- (CONFIG.west);
+	\path [line] (JPFCORE)					   -- (CONFIG);
+	\path [line, rounded corners] (EXTENSIONS.south) |- (CONFIG.east);
+	
+	\path [arrow] (JPF) -- (REPORT);
+\end{tikzpicture}
+\caption[\jpf{} Components and Workflow]{\jpf{} Components and workflow.}
+\label{fig:jpf:process}
+\end{figure}
+
+% TODO: Add an entry to the glossary for explicit state model checking, state, space state, state explosion and maybe partial-order reduction
+The default mode of operation of \jpf{} is \textit{explicit state model checking}. This means that \jpf{} keeps track of the execution status of a program, commonly referred to as a state, to check for violations of predefined properties. A state is characterized by three aspects: the information of existing threads, the contents of the heap, and the sequence of previous states that led to the current execution point (also known as path). A change in any of the aforementioned aspects represents a transition to a new state. Additionally, \jpf{} associates complementary information to a state (e.g., the range of possible values that trigger transitions), in order to reduce the total number of states to be explored. Termination is ensured by avoiding revisiting states.
+
+Figure \ref{fig:jpf:process} depicts the components that participate in a verification process using \jpf{}. The program under test, taken as bytecode, is loaded into the \jpf{} Virtual Machine which is in turn executed on top of the host JVM. The instructions of the program are executed one by one until an execution choice is found. At this point, \jpf{} records the current state and attempts to resume execution, exploring all possible scenarios based on the choice criteria. Once a chosen path has been completely explored, \jpf{} backtracks to a recorded state in order to explore a new path. Libraries used in the program under test need to be visible to the core in order to be able to execute the program correctly. Note that the core is comprised of several components in charge of directing the execution of the analysis. The behavior of these components could be extended by including modules. The final output is a report in its general sense; this could range from simple console output to automatic test generation.
+
+\begin{lstlisting}[
+language=Java,
+caption={[Simple Example with Random Values] The use of random values could lead to unexpected behavior. In this case, a division by zero could occur if certain combinations of random values are used. (Example taken from~\cite{WebNASAAmes2017})},
+float,
+label=lst:jsp:random
+]
+import java.util.Random;
+
+public class RandomExample {
+  public static void main(String[] args) {
+    Random random = new Random();
+    int a = random.nextInt(2); /*# \label{lst:ln:jsp:first-random} #*/
+    int b = random.nextInt(3); /*# \label{lst:ln:jsp:second-random} #*/
+    int c = a/(b+a-2); /*# \label{lst:ln:jsp:invalid} #*/
+  }
+}
+\end{lstlisting}
+
+%(Simple example) (Division by zero seems reasonable)
+Listing~\ref{lst:jsp:random} introduces an example that illustrates better how \jpf{} works. The analyzed program represents a trivial division of two random values. However, the problem relies on the fact that, under some specific values, the operation could yield invalid. Problems like this, where computations depend on random and unbounded values, are common sources of bugs in real software and, in many cases, are difficult to identify. With the right configuration, \jpf{} could detect this kind of problems by exploring the range of possible values that a random integer could take. Lines~\ref{lst:ln:jsp:first-random}~and~\ref{lst:ln:jsp:second-random} indicate that random values have been generated; at this point, \jpf{} could start exploring all different possible combinations spanning the domain of all integer values that can be represented, but clearly, this would imply an enormous number of combinations that would result in a state space explosion. To avoid this, a choice generator is registered, defining a minimal range of integers that could actually occur in an execution; in this case ranging from~0 to the parameter passed to the \textit{nextInt} function. Consequently, a combination that triggers the invalid operation is found promptly and reported back to the user. 
+
+Figure~\ref{fig:jpf:random} depicts how \jpf{} explores the state space of the program shown in Listing~\ref{lst:jsp:random}. \jpf{} starts checking the state space whenever the conditions that trigger the property to be validated are found; in this case, using random values. The \texttt{nextInt} instruction causes \jpf{} to register a \textit{Choice Generator} and start exploring the state space of the possible options. The dashed edges represent the search strategy used to explore the state space; in this case depth-first search. If a given execution path gets to an end and no unexpected behavior is found, \jpf{} backtracks to the latest instruction where a \textit{Choice Generator} was registered and tries a different value. The red arrows point to the first execution that triggers an error. Whenever an error is found \jpf{} halts the validation and reports its findings.
+
+\begin{figure}[t]
+\centering
+\[\xymatrix@C=1em{
+	% Row 1
+	& & & \ar@[red][lld] \ar@/_1pc/@{.>}[lld]_{\txt{\tiny 1}} \circ \ar[rrd] & & & & \txt{\texttt{~~~~~~Random random = new Random()}} \\
+	% Row 2
+	& \ar[ld] \ar@/_1pc/@{.>}[ld]_{\txt{\tiny 2}} \ar[d] \ar@/_/@{.>}[d]_(0.7){\txt{\tiny 5}} \txt{\texttt{a=0}} \ar@[red][rd] \ar@/^1pc/@{.>}[rd]^{\txt{\tiny 8}} & & & & 
+	  \ar[ld] \ar[d] \texttt{a=1} \ar[rd] & & \txt{\texttt{~~~int a = random.nextInt(2)}} \\
+	% Row 3   
+	\ar[d] \ar@/_1pc/@{.>}[d]_{\txt{\tiny 3}} \txt{\texttt{b=0}} & 
+	\ar[d] \ar@/_/@{.>}[d]_{\txt{\tiny 6}} \txt{\texttt{b=1}} & 
+	\ar@[red][d] \ar@/^1pc/@{.>}[d]^{\txt{\tiny 9}} \txt{\texttt{b=2}} & & 
+	\ar[d] \txt{\texttt{b=0}} & 
+	\ar[d] \txt{\texttt{b=1}} & 
+	\ar[d] \txt{\texttt{b=2}} & \txt{\texttt{~~~int b = random.nextint(3)}} \\
+	% Row 4
+	\txt{\texttt{c=0}} \ar@{.>}[ruu]_(0.4){\txt{\tiny 4}} & 
+	\ar@/_1pc/@{.>}[uu]_{\txt{\tiny 7}} \txt{\texttt{c=0}} & 
+	\txt{\texttt{c=0/0}} & & 
+	\txt{\texttt{c=-1}} & 
+	\txt{\texttt{c=1/0}} & 
+	\txt{\texttt{c=1}} & 
+	\txt{\texttt{int c = a/(b+a-2)~~~~~~}}
+} \]
+%\includegraphics[height=5cm]{example-image}
+\caption[State Space Exploration of an Example Program]{State space exploration of the program shown in Listing~\ref{lst:jsp:random}.}
+\label{fig:jpf:random}
+\end{figure}
+
+A key aspect of \jpf{} was to make it extensible and customizable. Following a modular design, users of the tool are capable of tuning \jpf{} up to the needs of a wide variety of analyses and verifications. Its main components are:
+
+\begin{itemize}
+	\item \textbf{Bytecode Factories}: Define the semantics of the instructions executed by \jpf{}'s virtual machine. Modifications to the bytecode factory define the execution model of the analyzed program (e.g., operations on symbolic values).
+	
+	\item \textbf{Choice Generators}: A set of possible choices must be provided in order to explore different behaviors of the system under test (e.g., a range of integer values for validation of random input). This aspect critically reduces the number of states explored during a validation, hence scoping the reach of an analysis.
+	
+	\item \textbf{Listeners}: Serve as monitoring points for interacting with the execution of \jpf{}. Listeners react to particular events triggered during the execution of an analysis, providing the right environment for the assertion of different properties.
+	
+	\item \textbf{Native Peers}: In some cases, a system under test will contain calls that are irrelevant to the analysis carried out (e.g., calling external libraries) or will execute native instructions that cannot be interpreted by \jpf{}. For these cases, native peers provide a mechanism for modeling the behavior of such situations and efficiently delegating their execution to the host virtual machine.
+	
+	\item \textbf{Publishers}: Report the outcome of an analysis. Whether a property was violated or the system under test was explored successfully, publishers provide the information that makes the analysis valuable.   
+	
+	\item \textbf{Search Strategies}: Indicate how the state space of the system under test is to be explored. In other words, the search strategy tells \jpf{} when to move forward and generate a new state or when to backtrack to a previously known state in order to try a different choice. Search strategies can be customized to guide the exploration of the state space to areas of interests where the analysis is most likely to detect an anomaly. 
+\end{itemize}
+
+Although \textit{explicit state model checking} is \jpf{}'s default mode of operation, by no means is the only one. Different kinds of formal methods can be used or implemented through modules, which are sensible extensions to \jpf{}'s core that accomplish a particular task. The modules range from different execution models to the validation of specific properties not included previously in the core. Some examples are: JPF-Racefinder, an extension for precisely detecting data races, and \acrfull{acr:spf}, which gives support to the \textit{symbolic state model checking} operation mode. The latter of these examples is explained further in the next section.
+
+\TUsubsection{Symbolic PathFinder}
+\label{subsec:spf}
+
+%(Mention previous versions of JPF)~\cite{Khurshid2003,Visser2008,Anand2007}
+
+%(Definition) SPF is part of the Java PathFinder verification tool-set [4]. Java Pathfinder includes JPF-core, an explicit-state model checker, and several extension projects, one of them being SPF (jpf-symbc Java project). The model checker consists of an extensible custom Java Virtual Machine (VM), state storage and backtracking capabilities, different search strate- gies, as well as listeners for monitoring and influencing the search. JPF-core executes the program concretely based on the standard semantics of the Java. In contrast, SPF replaces the concrete execution semantics of JPF-core with a non-standard symbolic interpreta- tion. SPF relies on the JPF-core framework to systemati- cally explore the different symbolic execution paths, as well as different thread interleavings. To limit the possibly in- finite search space that results from symbolically executing programs with loops or recursion, a user-specified depth is provided. We describe SPF’s features below.~\cite{Pasareanu2010}
+
+%(Symbolic Execution) SPF replaces the standard concrete execution semantics by using a Symbol- icInstructionFactory, that extends the bytecode instruc- tions to manipulate symbolic values and expressions. For ex- ample, when adding two symbolic integers sym1 and sym2 (by executing the IADD bytecode) the result is a symbolic expression representing sym1 +sym2. Storage of symbolic values and expressions is accomplished by assigning symbolic attributes to variables, fields, and stack operands.~\cite{Pasareanu2010}
+
+%(Types supported) SPF handles inputs and opera- tions on booleans, integers, reals, and complex data structures, as well as multi-threading, via integration with the Java PathFinder (JPF) model checker~\cite{Luckow2014}
+
+%(Conditionals and Choice Generators) The symbolic execution of conditional instructions (if statements) involves exploration of two paths corresponding to the branch predicate eval- uating to true and false; both choices are generated non- deterministically by the PCChoiceGenerator. Each generated choice is associated with a path condition encoding the condition and its negation respectively.~\cite{Pasareanu2010}
+
+%(Solvers) The path conditions are checked for satisfiability using off-the-shelf decision pro- cedures or constraint solvers. If the path condition is satisfi- able, the search continues; otherwise, the search backtracks (meaning that branch is unreachable). SPF uses multiple decision procedures and constraint solvers through a generic interface. Currently, SPF supports: choco for in- teger/real constraints, cvc3 for linear constraints, and the interval arithmetic solver IASolver. Adding support for ad- ditional constraint solvers such as HAMPI and YICES is work in progress.~\cite{Pasareanu2010}
+
+%(Solvers) solvers such as CHOCO [3], CORAL [8], and CVC3 [1]~\cite{Luckow2014}
+
+%(Input Data Structures - maybe not needed) SPF uses lazy initialization [5] to handle unbounded input data structures. The execution starts on data structures with un-initialized fields and it initializes them lazily, when the fields are first accesed. A field of class T is initialized non-deterministically to (1) null, (2) a reference to a new instance of class T with uninitialized fields, or (3) a reference to an object of type T created during a prior field initialization; this sytematically treats aliasing. The HeapChoiceGenerator is used to gener- ate the choices.~\cite{Pasareanu2010}
+
+%(Native Peers maybe not necessary) Most notably, SPF incorporates native peers that capture the calls to the java.lang.Math libraries and dispatch them to an appropriate constraint solver that can handle complex Math constraints. The same mechanism is also used for capturing String operations.~\cite{Pasareanu2010}
+
+%(Listeners) The listeners gather and display information about the path conditions generated during the symbolic execution. They generate test cases and sequences in various user-defined formats.~\cite{Pasareanu2010}
+
+%(Current limitations) Work in progress includes updating the symbolic string analysis and careful testing of the code~\cite{Luckow2014}. (However, mention how the current version has some limited support.)
+
+As one of the earliest extension modules, \acrfull{acr:spf} integrates symbolic execution principles into \jpf{}. Although it has undergone several modifications throughout the years~\cite{Khurshid2003,Pasareanu2008,Anand2007}, its current mode of operation consists of replacing the concrete execution semantics of the default \jpf{} model checker with a corresponding symbolic interpretation~\cite{Pasareanu2010}. In recent years \spf{} has had some improvements, primarily supporting Java 1.7 and better detection of unfeasible paths~\cite{Luckow2014}.
+
+The introduction of symbolic semantics is achieved through the use of the \textit{SymbolicInstructionFactory} class; an extension to the default bytecode instruction set that interacts with symbolic values and expressions. For example, operating two symbolic integers using the \textit{IADD} bytecode instruction results in the creation of a symbolic expression that represents the sum of those integers. Furthermore, symbolic values and expressions are assigned to variables and fields, instead of the corresponding concrete representation that would result from a normal execution.
+
+\spf{} supports symbolic operations on several primitive types: booleans, integers, and doubles. Nevertheless, only limited support to symbolic data structures and \textit{String} operations is offered in the latest \spf{} version.
+
+The interpretation of branching instructions is a key point of symbolic execution because it determines how the subsequent paths ought to be explored. \spf{} processes branches by generating a special choice generator called \textit{PCChoiceGenerator} every time a conditional instruction is found. The choices registered by the choice generator correspond to the evaluation of the predicate and its negation respectively, where each choice is linked to a path condition reflecting how the predicate was evaluated. \spf{} takes advantage of \jpf{}'s model checking framework to explore the symbolic state space by considering only the registered choices at branching instructions.
+
+\spf{} checks the satisfiability of path conditions using third-party constraint solvers like Choco~\cite{Choco2016}, CORAL~\cite{Souza}, and CVC3~\cite{Barrett2007}. Most of these solvers are geared towards solving complex numerical constraints while solving structural constraints (like \textit{String} predicates) are limited at best or incompatible at worst. If a path condition is unsatisfiable, \spf{} backtracks to the latest branching point and tries out a different choice.
+
+Listeners are used for gathering information during the evaluation of path conditions. Publishers make use of this information to present it to the user in different ways: One common case is to partition the input data in the different equivalence classes, while other is the automatic generation of unit tests. Using symbolic execution to automatically generate a test suite with path coverage is a research topic explored in several studies~\cite{Pasareanu2008b,Visser2004a,Godefroid2008}.
+
+Configuration files are used to indicate which methods should be executed symbolically and also specify which of their parameters are to be considered as symbolic or concrete values. By combining symbolic and concrete values during the execution of a method marked to be symbolically executed, \spf{} provides the framework for concolic execution~\cite{Godefroid2005}.
+
+
+
+
+
+
+
+

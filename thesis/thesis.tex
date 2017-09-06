@@ -1,0 +1,136 @@
+% Includes packages and relevant configurations
+\input{parts/header}
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% 																				%
+% 																				%
+% 																				%
+%            				LaTeX Template for Theses							%
+% 																				%
+% 																				%
+% 																				%
+%	This template was prepared by the Instituts für Papierfabrikation und 		%
+%	mechanische Verfahrenstechnik (PMV) of the TU Darmstad for the course		% 
+%	"Einführung in wissenschaftliches Arbeiten und Schreiben" (Introduction		%
+%	to Scientific Working and Writing). The LaTeX templates of the Physics 		%
+%	Department of the TU Darmstadt and the one from Prof. Dr.-Ing. Oberlack		%
+% 	from the Mechanical Engineering Department of the TU Darmstad were used		%
+%	as the basis of this document.												%
+% 																				%
+%	We recommend reading the script for the course "Wissenschaftliches Arbeiten	% 
+%	und Schreiben für Maschinenbau-Studierende" before using the template.		%
+%	work and writing for mechanical engineering students".						%
+% 																				%	
+%	Unofficially translated to English by Omar Erminy							%
+% 	<omarantonio.erminyugueto@stud.tu-darmstadt.de>								%
+% 																				%
+% 																				%
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+
+% Includes the title and its contents
+\input{parts/title}
+
+% Includes the configuration and definitions of abbreviations and symbols
+\input{parts/abbreviationsandsymbols}
+
+\begin{document}
+
+% Roman page numbers
+\pagenumbering{Roman}
+\setcounter{page}{0}
+
+% Creates the title page and sets its PDF bookmark
+\pdfbookmark[0]{Title}{title}
+\maketitle
+
+% Includes the legal imprint and sets its PDF bookmark
+\setcounter{page}{0}
+\pdfbookmark[0]{Impressum}{impressum}
+\include{parts/impressum}
+
+% Includes the declatarion of academic integrity (Uncomment the variant corresponding to the language)
+%\include{parts/declarationacademicintegrity_de}
+\setcounter{page}{0}
+\pdfbookmark[0]{Declaration of Academic Integrity}{declaration}
+\include{parts/declarationacademicintegrity_en}
+
+% Includes the abstract
+\setcounter{page}{0}
+\pdfbookmark[0]{Abstract}{abstract}
+\include{parts/abstract} % New TUD-Design abstract/summary template
+%\include{parts/abstractalternative} % Classic abstract template (Uncomment if preferred)
+
+% Includes the table of contents and sets its PDF bookmark
+\setcounter{page}{0}
+\pdfbookmark[0]{Contents}{toc} % The PDF bookmark is set here because it is not set automatically
+\tableofcontents
+
+% Saves the current roman page number into the variable "savecounter" and switches to arabic page numbering
+\clearpage
+\newcounter{savecounter}				% Creates the variable "savecounter" to store the last roman page number
+\setcounter{savecounter}{\value{page}}	% Saves the last roman page number in the variable in order to continue the roman page numbering after the end of the current document
+\pagenumbering{arabic} 					% Activates the arabic page numbering (sets the counter back to 1)
+
+% Loads the corresponding sections from the "parts" directory
+\include{parts/introduction}
+\renewcommand{\thechapter}{\arabic{chapter}}%
+\include{parts/relatedwork}
+\include{parts/main}
+\include{parts/evaluation}
+\include{parts/conclusion}
+
+% Restores the page counter to the previously stored roman counter and switches to roman page numbering
+\pagenumbering{Roman}					% Activates the roman page numbering
+%\setcounter{page}{\value{savecounter}}	% Restores the last used roman numeral
+\setcounter{page}{1}
+
+% Includes appendices
+\appendix
+\include{parts/appendix-collaborations}
+\include{parts/appendix-installation}
+
+
+% Includes the list of figures
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{\listfigurename}
+\listoffigures
+
+\begingroup
+\let\clearpage\relax
+
+% Includes the list of tables
+\phantomsection
+\addcontentsline{toc}{chapter}{\listtablename}
+\listoftables
+\endgroup
+
+% Includes the list of listings
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{\lstlistlistingname}
+\lstlistoflistings
+
+% Adds all the entries in the glossaries. Uncomment to include entries even if they have not been referenced
+%\glsaddall	
+
+% Includes the glossary
+%\setlength{\glsdescwidth}{12.5cm}
+%\printglossary[style=long]
+
+% Includes the list of abbreviations
+%\printacronyms[style=long,title={List of Abbreviations and Acronyms}]
+% Table alternative to the list of abbreviations (Uncomment if preferred)
+%\include{parts/abbreviations_table}
+
+% Includes the list of symbols
+%\printsymbols[style=longheader,title={List of Symbols}]
+% Table alternative to the list of symbols (Uncomment if preferred)
+%\include{parts/symbols_table}
+
+% Includes the bibliography
+\clearpage
+\pdfbookmark[0]{Bibliography}{bib} % The PDF bookmark is set here because it is not set automatically
+\printbibliography
+
+\end{document}

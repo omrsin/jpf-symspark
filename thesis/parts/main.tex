@@ -1,0 +1,58 @@
+\TUchapter{Symbolic Execution of Spark Programs}
+\label{ch:symbolic-spark}
+
+This chapter introduces our proposed solution to the problem of conducting symbolic executions on Spark programs. First, we provide a brief explanation of the characteristics of Spark's programming model. This lays the ground for understanding the design decisions of the suggested process. Second, a summarized overview of the approach is presented before proceeding into more detailed explanations. The following sections are structured as follows: the conceptual process is explained in Section~\ref{sec:conceptual-process}, a couple of concrete examples are presented in Section~\ref{sec:logic:example}, and finally, Section~\ref{sec:jpf-symspark} offers a thorough description of our proposed implementation.
+
+\textbf{What are the characteristics of a regular Spark program?}
+
+To provide a flexible programming paradigm for big data processing, Spark's main \acrshort{acr:api} exposes methods that act as higher order functions. Particularly, these methods receive user defined functions as input parameters that dictate how certain operations will be carried out. However, the passed functions always comply to some conditions imposed by the method, for example, the function passed to a \textit{filter} transformation must be defined over the data type of the target \acrshort{acr:rdd} and must return a \textit{boolean} value.
+
+The use of functions as parameters in Spark operations has an impact on the control flow of the program. Not only the particular Spark operation defines how the program will behave, but also the passed functions could potentially introduce control flow statements like conditionals or loops. Moreover, the control flow behavior of the Spark operations themselves is mostly static (e.g., the iterative and cumulative nature of a \textit{reduce} action), whereas the diverse range of variation introduced by a user defined function is practically unbounded.
+
+For this reason, in the context of program analysis in general and to our particular scope of symbolic execution, both the nature of the Spark operations and the peculiarities of the user defined functions on each program are relevant aspects that have to be studied together in order to provide a reasonable conclusion.
+
+\textbf{Our approach}
+
+A Spark program consists of a chain of transformations on one or more \acrshort{acr:rdd}s that finally conclude with an action applied to them. \acrshort{acr:rdd}s are manipulated through an \acrshort{acr:api} that provides the general guidelines on how the data collection is to be processed without falling into the specifics. For example, the \textit{filter} transformation indicates that only the elements matching a given filtering condition would be selected, without specifying exactly what is the condition to be evaluated. A similar approach is followed by most of the actions and transformations in Spark. Many of these operations come from functional programming languages and define abstractions to interact with data collections.
+%TODO: MAYBE Refer to the first part of the diagram
+
+The precise behavior of most operations is defined by the programmer. Given that most of Spark's actions and transformations are higher order functions, the programmers define a custom function that fulfills the contract of the specific operation. For example, again the \textit{filter} transformation expects as a parameter a function that takes an element of the same type as the type of the elements in the collection handled by the \acrshort{acr:rdd} and returns a boolean value. When the \textit{filter} transformation is later invoked, it calls the passed function with each element in the \acrshort{acr:rdd} and, depending on the output, it decides if the value is filtered or not.
+
+%TODO: MAYBE This are two linear diagrams to illustrate a chain of transformations and underneath a chain of calls to their respective functions bound with conditions particular to eachs transformation.
+
+%% Define block styles
+%\tikzstyle{block} = [rectangle, draw, fill=white, align=center,rounded corners, minimum height=3em, minimum width=3em, drop shadow]
+%\tikzstyle{line} = [draw, -{>[length=2mm, width=1mm]}]
+%\begin{figure}[t]
+%	\centering
+%	\begin{tikzpicture}[node distance = 5cm, auto]
+%	\end{tikzpicture}
+%	
+%	\begin{minipage}[t]{\linewidth}
+%	\end{minipage}
+%	\vspace{\belowdisplayskip}
+%	
+%	\begin{tikzpicture}[node distance = 4.7cm, auto]
+%	\end{tikzpicture}
+%	
+%	\begin{minipage}[t]{\linewidth}
+%	\end{minipage}
+%	
+%	\caption[*]{*}
+%\end{figure}
+
+Having this in mind, the symbolic execution of an isolated Spark operation depends solely on the behavior of the function passed by the user. However, when analyzing a whole program, special considerations for every particular operation must be taken into account. These considerations are different in nature but mostly refer to how output values are percolated to the subsequent operations in order to ensure the correct analysis of the next functions.
+%TODO: MAYBE Refer to the second part of the diagram
+
+The general approach could be summarized in the following four steps:
+\begin{enumerate}
+	\item Identify the Spark operation
+	\item Carry out the symbolic execution of the passed function
+	\item Take special considerations based on the executed Spark operation
+	\item Ensure the correct connection to any subsequent Spark operation
+\end{enumerate}
+
+
+\input{parts/main/process}
+\input{parts/main/module}
+
