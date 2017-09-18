@@ -107,7 +107,7 @@ Figure \ref{fig:jpf:process} depicts the components that participate in a verifi
 
 \begin{lstlisting}[
 language=Java,
-caption={[Simple Example with Random Values] The use of random values could lead to unexpected behavior. In this case, a division by zero could occur if certain combinations of random values are used. (Example taken from~\cite{WebNASAAmes2017})},
+caption={[Simple Example with Random Values] The use of random values could lead to unexpected behaviors. In this case, a division by zero could occur if certain combinations of random values are used. (Example taken from~\cite{WebJPF2017})},
 float,
 label=lst:jsp:random
 ]
@@ -126,20 +126,20 @@ public class RandomExample {
 %(Simple example) (Division by zero seems reasonable)
 Listing~\ref{lst:jsp:random} introduces an example that illustrates better how \jpf{} works. The analyzed program represents a trivial division of two random values. However, the problem relies on the fact that, under some specific values, the operation could yield invalid. Problems like this, where computations depend on random and unbounded values, are common sources of bugs in real software and, in many cases, are difficult to identify. With the right configuration, \jpf{} could detect this kind of problems by exploring the range of possible values that a random integer could take. Lines~\ref{lst:ln:jsp:first-random}~and~\ref{lst:ln:jsp:second-random} indicate that random values have been generated; at this point, \jpf{} could start exploring all different possible combinations spanning the domain of all integer values that can be represented, but clearly, this would imply an enormous number of combinations that would result in a state space explosion. To avoid this, a choice generator is registered, defining a minimal range of integers that could actually occur in an execution; in this case ranging from~0 to the parameter passed to the \textit{nextInt} function. Consequently, a combination that triggers the invalid operation is found promptly and reported back to the user. 
 
-Figure~\ref{fig:jpf:random} depicts how \jpf{} explores the state space of the program shown in Listing~\ref{lst:jsp:random}. \jpf{} starts checking the state space whenever the conditions that trigger the property to be validated are found; in this case, using random values. The \texttt{nextInt} instruction causes \jpf{} to register a \textit{Choice Generator} and start exploring the state space of the possible options. The dashed edges represent the search strategy used to explore the state space; in this case depth-first search. If a given execution path gets to an end and no unexpected behavior is found, \jpf{} backtracks to the latest instruction where a \textit{Choice Generator} was registered and tries a different value. The red arrows point to the first execution that triggers an error. Whenever an error is found \jpf{} halts the validation and reports its findings.
+Figure~\ref{fig:jpf:random} depicts how \jpf{} explores the state space of the program shown in Listing~\ref{lst:jsp:random}. \jpf{} starts checking the state space whenever the conditions that trigger the property to be validated are found; in this case, using random values. The \texttt{nextInt} instruction causes \jpf{} to register a \textit{Choice Generator} and start exploring the state space of the possible options. The dashed edges represent the search strategy used to explore the state space; in this case depth-first search. If a given execution path gets to an end and no unexpected behavior is found, \jpf{} backtracks to the latest instruction where a \textit{Choice Generator} was registered and tries a different value. The dashed red arrows point to the first execution that triggers an error. Whenever an error is found \jpf{} halts the validation and reports its findings.
 
 \begin{figure}[t]
 \centering
 \[\xymatrix@C=1em{
 	% Row 1
-	& & & \ar@[red][lld] \ar@/_1pc/@{.>}[lld]_{\txt{\tiny 1}} \circ \ar[rrd] & & & & \txt{\texttt{~~~~~~Random random = new Random()}} \\
+	& & & \ar@[red]@{-->}[lld] \ar@/_1pc/@{.>}[lld]_{\txt{\tiny 1}} \circ \ar[rrd] & & & & \txt{\texttt{~~~~~~Random random = new Random()}} \\
 	% Row 2
-	& \ar[ld] \ar@/_1pc/@{.>}[ld]_{\txt{\tiny 2}} \ar[d] \ar@/_/@{.>}[d]_(0.7){\txt{\tiny 5}} \txt{\texttt{a=0}} \ar@[red][rd] \ar@/^1pc/@{.>}[rd]^{\txt{\tiny 8}} & & & & 
+	& \ar[ld] \ar@/_1pc/@{.>}[ld]_{\txt{\tiny 2}} \ar[d] \ar@/_/@{.>}[d]_(0.7){\txt{\tiny 5}} \txt{\texttt{a=0}} \ar@[red]@{-->}[rd] \ar@/^1pc/@{.>}[rd]^{\txt{\tiny 8}} & & & & 
 	  \ar[ld] \ar[d] \texttt{a=1} \ar[rd] & & \txt{\texttt{~~~int a = random.nextInt(2)}} \\
 	% Row 3   
 	\ar[d] \ar@/_1pc/@{.>}[d]_{\txt{\tiny 3}} \txt{\texttt{b=0}} & 
 	\ar[d] \ar@/_/@{.>}[d]_{\txt{\tiny 6}} \txt{\texttt{b=1}} & 
-	\ar@[red][d] \ar@/^1pc/@{.>}[d]^{\txt{\tiny 9}} \txt{\texttt{b=2}} & & 
+	\ar@[red]@{-->}[d] \ar@/^1pc/@{.>}[d]^{\txt{\tiny 9}} \txt{\texttt{b=2}} & & 
 	\ar[d] \txt{\texttt{b=0}} & 
 	\ar[d] \txt{\texttt{b=1}} & 
 	\ar[d] \txt{\texttt{b=2}} & \txt{\texttt{~~~int b = random.nextint(3)}} \\
